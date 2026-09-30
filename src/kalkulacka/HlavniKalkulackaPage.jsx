@@ -301,6 +301,7 @@ const HlavniKalkulackaPage = () => {
     });
     
     const proVeriteleJ = Math.max(0, insJ.srazka - params.odmenaSpravceJednotlivec - data.bezneMesicniVyzivne1);
+    // TODO: doplňkové zdroje přidat do dlouhodobého modelu až po evidenci jejich pravidelnosti a trvání.
     const celkemProVeriteleJ = (proVeriteleJ * data.delkaOddluzeni) + data.vytezekZpenezeni;
     const uspokojeniInfoJ = calculateCreditorSatisfaction({
       availableForCreditors: celkemProVeriteleJ,
@@ -354,6 +355,7 @@ const HlavniKalkulackaPage = () => {
     const srazkaCelkemM = insM_A.srazka + insM_B.srazka;
     const kVyplateCelkemM = insM_A.kVyplate + insM_B.kVyplate;
     const proVeriteleM = Math.max(0, srazkaCelkemM - params.odmenaSpravceManzele - data.bezneMesicniVyzivne1 - data.bezneMesicniVyzivne2);
+    // TODO: doplňkové zdroje přidat do dlouhodobého modelu až po evidenci jejich pravidelnosti a trvání.
     const celkemProVeriteleM = (proVeriteleM * data.delkaOddluzeni) + data.vytezekZpenezeni;
     const uspokojeniInfoM = calculateCreditorSatisfaction({
       availableForCreditors: celkemProVeriteleM,
