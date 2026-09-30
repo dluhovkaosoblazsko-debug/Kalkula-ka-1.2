@@ -108,6 +108,12 @@ body {
 .dashboard-content .text-blue-600, .dashboard-content .text-blue-700, .dashboard-content .text-blue-800 { color: var(--dash-cyan) !important; }
 .dashboard-content .text-indigo-600, .dashboard-content .text-indigo-700 { color: #b49fff !important; }
 .dashboard-content .text-green-600, .dashboard-content .text-green-700, .dashboard-content .text-green-800 { color: #68e7b9 !important; }
+.dashboard-content .text-red-900 { color: #ffd3da !important; }
+.dashboard-content .text-red-800, .dashboard-content .text-red-700 { color: #ffb8c2 !important; }
+.dashboard-content .text-red-600, .dashboard-content .text-red-500 { color: #ff8f9f !important; }
+.dashboard-content [class*="border-red-"] { border-color: rgba(255, 137, 153, .48) !important; }
+.dashboard-content .bg-red-50 { background-color: rgba(108, 35, 57, .56) !important; }
+.dashboard-content .bg-red-100 { background-color: rgba(137, 43, 67, .62) !important; }
 .dashboard-content input, .dashboard-content select, .dashboard-content textarea { background-color: #0b2445 !important; border-color: rgba(127, 184, 255, .28) !important; color: var(--dash-text) !important; }
 .dashboard-content input:focus, .dashboard-content select:focus, .dashboard-content textarea:focus { outline: 2px solid rgba(73, 215, 238, .55); outline-offset: 1px; }
 .dashboard-content table thead { background-color: #102b50 !important; }
