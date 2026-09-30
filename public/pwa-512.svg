@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Kalkulačka oddlužení">
+  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#49d7ee"/><stop offset="1" stop-color="#5279ff"/></linearGradient></defs>
+  <rect width="512" height="512" rx="112" fill="#07162d"/>
+  <rect x="54" y="54" width="404" height="404" rx="90" fill="url(#g)"/>
+  <rect x="118" y="106" width="276" height="298" rx="40" fill="#07162d" opacity=".94"/>
+  <path d="M164 162h184M164 216h184M164 270h58M290 270h58M164 324h58M290 324h58" stroke="#a8eefa" stroke-width="22" stroke-linecap="round"/>
+</svg>
