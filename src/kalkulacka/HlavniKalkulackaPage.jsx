@@ -3,7 +3,7 @@ import {
   Calculator, Users, User, Info, AlertCircle,
   ShieldAlert, Settings, Layers, Printer, Gavel
 } from 'lucide-react';
-import { DEFAULT_2026_PARAMS, calculateCreditorSatisfaction, calculateWageDeduction, getMinimumInsolvencyPayment } from '../lib/calculations2026';
+import { DEFAULT_2026_PARAMS, calculateCreditorSatisfaction, calculateMinimumPaymentCoverage, calculateWageDeduction, getMinimumInsolvencyPayment } from '../lib/calculations2026';
 
 // --- POMOCNÁ KOMPONENTA PRO TOOLTIPY ---
 const Tooltip = ({ children, text }) => (
@@ -61,6 +61,107 @@ const colorMap = {
   },
 }
 
+const formatKc = (value) => `${Math.round(Math.max(0, Number(value) || 0)).toLocaleString('cs-CZ')} Kč`;
+
+const MinimumCoveragePanel = ({ coverage, data, onToggle, onAmountChange, modeLabel, fieldSuffix }) => {
+  const promiseEnabled = Boolean(data[`povolitPrislibDluznika${fieldSuffix}`]);
+  const thirdPartyEnabled = Boolean(data[`povolitPlneniTretiOsoby${fieldSuffix}`]);
+  const promiseKey = `zavaznyPrislib${fieldSuffix}`;
+  const thirdPartyKey = `pravidelnePlneniTretiOsoby${fieldSuffix}`;
+  const stillNeedsThirdParty = coverage.deficitAfterDebtorPromise > 0;
+  const hasAdditionalSources = promiseEnabled || thirdPartyEnabled;
+  const finalDeficitConfirmed = thirdPartyEnabled && coverage.finalDeficit > 0;
+
+  return (
+    <section className="rounded-xl border border-slate-700/70 bg-slate-950/45 p-4 space-y-3 print:bg-white print:border-slate-300">
+      <div className="flex items-start gap-3">
+        {coverage.coveredByStatutoryDeduction ? (
+          <div className="flex-1 rounded-lg border border-emerald-400/50 bg-emerald-950/40 p-3 text-sm text-emerald-100 print:bg-emerald-50 print:text-emerald-900">
+            <p className="font-bold">Minimum splněno zákonnou srážkou</p>
+            <p className="mt-1 text-xs">Zákonná srážka {formatKc(coverage.statutoryDeduction)} pokrývá požadované minimum {formatKc(coverage.requiredMinimum)}.</p>
+          </div>
+        ) : (
+          <div className={`flex-1 rounded-lg border p-3 text-sm ${finalDeficitConfirmed ? 'border-rose-400/70 bg-rose-950/40 text-rose-100' : 'border-amber-400/70 bg-amber-950/35 text-amber-100'} print:bg-white print:text-slate-900`}>
+            <p className="font-bold">{finalDeficitConfirmed ? 'Ani všechny aktivní zdroje nestačí' : (coverage.finalDeficit === 0 ? 'Minimum pokryto doplňkovými zdroji' : 'Zákonná srážka sama nestačí')}</p>
+            <p className="mt-1 text-xs">Pro {modeLabel} činí požadované minimum {formatKc(coverage.requiredMinimum)}. Zákonná srážka pokrývá {formatKc(coverage.statutoryDeduction)}.</p>
+          </div>
+        )}
+      </div>
+
+      {!coverage.coveredByStatutoryDeduction && (
+        <div className="grid gap-2 text-xs text-slate-200 print:text-slate-700">
+          <div className="flex justify-between gap-4"><span>Požadované minimum</span><strong>{formatKc(coverage.requiredMinimum)}</strong></div>
+          <div className="flex justify-between gap-4"><span>Zákonná srážka</span><strong>{formatKc(coverage.statutoryDeduction)}</strong></div>
+          <div className="flex justify-between gap-4 font-semibold text-amber-200 print:text-amber-800"><span>Chybí bez dalších zdrojů</span><strong>{formatKc(coverage.deficitAfterStatutoryDeduction)}</strong></div>
+        </div>
+      )}
+
+      {!coverage.coveredByStatutoryDeduction && (
+        <div className="space-y-3 rounded-lg border border-slate-700 bg-slate-900/60 p-3 print:border-slate-300 print:bg-slate-50">
+          <label className="flex items-start gap-2 text-sm text-slate-100 print:text-slate-800">
+            <input
+              type="checkbox"
+              checked={promiseEnabled}
+              onChange={(event) => onToggle(`povolitPrislibDluznika${fieldSuffix}`, promiseKey, event.target.checked)}
+              className="mt-0.5 h-4 w-4 accent-cyan-400"
+            />
+            <span><strong>Dlužník může část chybějící částky hradit ze své nezabavitelné částky nebo jiných nepostižitelných příjmů.</strong></span>
+          </label>
+          {promiseEnabled && (
+            <div className="pl-6">
+              <input type="number" min="0" step="1" name={promiseKey} value={data[promiseKey] ?? ''} onChange={onAmountChange} className="w-full rounded-lg border border-slate-600 bg-slate-950 px-3 py-2 text-sm text-white outline-none focus:border-cyan-400 print:bg-white print:text-slate-900" placeholder="Např. 500" />
+              <p className="mt-1 text-xs text-slate-400 print:text-slate-600">Dlužník může k návrhu připojit závazný příslib, že chybějící plnění bude hradit ze základní částky, která mu nesmí být sražena, nebo z jiných příjmů, které nelze postihnout výkonem rozhodnutí či exekucí. Takové plnění nesmí ohrozit základní hmotné potřeby dlužníka ani osob odkázaných výživou. Kalkulačka posuzuje pouze matematické pokrytí, nikoli udržitelnost příslibu.</p>
+            </div>
+          )}
+
+          {stillNeedsThirdParty && (
+            <>
+              <p className="text-xs text-slate-300 print:text-slate-700">Po započtení příslibu aktuálně chybí {formatKc(coverage.deficitAfterDebtorPromise)}.</p>
+              <label className="flex items-start gap-2 text-sm text-slate-100 print:text-slate-800">
+                <input
+                  type="checkbox"
+                  checked={thirdPartyEnabled}
+                  onChange={(event) => onToggle(`povolitPlneniTretiOsoby${fieldSuffix}`, thirdPartyKey, event.target.checked)}
+                  className="mt-0.5 h-4 w-4 accent-cyan-400"
+                />
+                <span><strong>Chybějící částku může poskytovat třetí osoba.</strong><span className="block text-xs text-slate-400 print:text-slate-600">Další plnění může být zajištěno například darovací smlouvou nebo smlouvou o důchodu.</span></span>
+              </label>
+              {thirdPartyEnabled && (
+                <div className="pl-6">
+                  <input type="number" min="0" step="1" name={thirdPartyKey} value={data[thirdPartyKey] ?? ''} onChange={onAmountChange} className="w-full rounded-lg border border-slate-600 bg-slate-950 px-3 py-2 text-sm text-white outline-none focus:border-cyan-400 print:bg-white print:text-slate-900" placeholder="Např. 1000" />
+                  <p className="mt-1 text-xs text-slate-400 print:text-slate-600">Kalkulačka ověřuje pouze matematické pokrytí minimální částky, neposuzuje platnost smlouvy ani schopnost třetí osoby závazek plnit.</p>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      {hasAdditionalSources && (
+        <div className="rounded-lg border border-slate-700 bg-slate-900/40 p-3 text-xs text-slate-200 print:border-slate-300 print:bg-slate-50 print:text-slate-700">
+          <div className="flex justify-between"><span>Zákonná srážka</span><strong>{formatKc(coverage.statutoryDeduction)}</strong></div>
+          <div className="flex justify-between"><span>Závazný příslib</span><strong>{formatKc(coverage.debtorPromise)}</strong></div>
+          <div className="flex justify-between"><span>Plnění třetí osoby</span><strong>{formatKc(coverage.thirdPartyContribution)}</strong></div>
+          <div className="mt-2 flex justify-between border-t border-slate-700 pt-2 font-bold"><span>Celkem měsíčně</span><strong>{formatKc(coverage.totalAvailable)}</strong></div>
+          <div className="flex justify-between"><span>Požadované minimum</span><strong>{formatKc(coverage.requiredMinimum)}</strong></div>
+          <p className={`mt-2 font-semibold ${finalDeficitConfirmed ? 'text-rose-300 print:text-rose-700' : 'text-amber-200 print:text-amber-800'}`}>
+            {finalDeficitConfirmed ? `Stále chybí ${formatKc(coverage.finalDeficit)}.` : (coverage.finalDeficit > 0 ? `Po započtení dosud aktivních zdrojů chybí ${formatKc(coverage.finalDeficit)}; lze doplnit další zdroj.` : 'Minimum je pokryto.')}
+          </p>
+        </div>
+      )}
+
+      {finalDeficitConfirmed && (
+        <div className="rounded-lg border border-rose-400/70 bg-rose-950/45 p-3 text-xs text-rose-100 print:bg-rose-50 print:text-rose-900">
+          <p className="font-bold">Riziko nepovolení oddlužení</p>
+            <p className="mt-1">Ani po započtení všech zadaných zdrojů není orientační minimální měsíční plnění pokryto. Stále chybí {formatKc(coverage.finalDeficit)}. Při zadaných údajích může jít o riziko nesplnění podmínky pro povolení oddlužení.</p>
+          </div>
+      )}
+
+      <p className="text-[11px] leading-relaxed text-slate-400 print:text-slate-600">Doplňkové zdroje slouží v této verzi ke kontrole minima. Model dlouhodobého uspokojení věřitelů níže pracuje pouze se zákonnou srážkou, protože pravidelnost a trvání příslibu či plnění třetí osoby musí být doloženy.</p>
+    </section>
+  );
+};
+
 const HlavniKalkulackaPage = () => {
   const [activeTab, setActiveTab] = useState('jednotlivec');
   const [isLoaded, setIsLoaded] = useState(false);
@@ -100,12 +201,22 @@ const HlavniKalkulackaPage = () => {
       duchodPovinny1: false,
       duchodPartner1: false,
       bezneMesicniVyzivne1: 0,
+      // Doplňkové zdroje pro krytí minima oddlužení (jednotlivec)
+      povolitPrislibDluznika1: false,
+      zavaznyPrislib1: '',
+      povolitPlneniTretiOsoby1: false,
+      pravidelnePlneniTretiOsoby1: '',
       
       // Parametry dlužníka 2
       vyzivovaneOsoby2: 0,
       osobySVykonemProVyzivne2: 0,
       duchodPovinny2: false,
       bezneMesicniVyzivne2: 0,
+      // Doplňkové zdroje pro krytí minima oddlužení (manželé)
+      povolitPrislibDluznikaM: false,
+      zavaznyPrislibM: '',
+      povolitPlneniTretiOsobyM: false,
+      pravidelnePlneniTretiOsobyM: '',
 
       // Exekuční parametry
       typPohledavky: 'neprednostni', 
@@ -203,7 +314,13 @@ const HlavniKalkulackaPage = () => {
       configuredMinimum: params.minSplatkaJednotlivec,
     });
     const minimalneProVeriteleJ = params.odmenaSpravceJednotlivec;
-    const rizikoNepovoleniJ = insJ.srazka < minimalniNutnaSrazkaJ || proVeriteleJ < minimalneProVeriteleJ;
+    const coverageJ = calculateMinimumPaymentCoverage({
+      statutoryDeduction: insJ.srazka,
+      requiredMinimum: minimalniNutnaSrazkaJ,
+      debtorPromise: data.povolitPrislibDluznika1 ? data.zavaznyPrislib1 : 0,
+      thirdPartyContribution: data.povolitPlneniTretiOsoby1 ? data.pravidelnePlneniTretiOsoby1 : 0,
+    });
+    const rizikoNepovoleniJ = coverageJ.finalDeficit > 0;
 
     // --- List 3: Insolvence Manželé ---
     const insM_A = calculateResult({
@@ -250,11 +367,17 @@ const HlavniKalkulackaPage = () => {
       configuredMinimum: params.minSplatkaManzele,
     });
     const minimalneProVeriteleM = params.odmenaSpravceManzele;
-    const rizikoNepovoleniM = srazkaCelkemM < minimalniNutnaSrazkaM || proVeriteleM < minimalneProVeriteleM;
+    const coverageM = calculateMinimumPaymentCoverage({
+      statutoryDeduction: srazkaCelkemM,
+      requiredMinimum: minimalniNutnaSrazkaM,
+      debtorPromise: data.povolitPrislibDluznikaM ? data.zavaznyPrislibM : 0,
+      thirdPartyContribution: data.povolitPlneniTretiOsobyM ? data.pravidelnePlneniTretiOsobyM : 0,
+    });
+    const rizikoNepovoleniM = coverageM.finalDeficit > 0;
 
     return { 
-      ex, insJ, proVeriteleJ, uspokojeniJ, uspokojeniInfoJ, rizikoNepovoleniJ, minimalniNutnaSrazkaJ, minimalneProVeriteleJ, totalPrijem1, celkemProVeriteleJ,
-      insM_A, insM_B, srazkaCelkemM, kVyplateCelkemM, proVeriteleM, uspokojeniM, uspokojeniInfoM, rizikoNepovoleniM, minimalniNutnaSrazkaM, minimalneProVeriteleM, totalPrijem2, celkemProVeriteleM 
+      ex, insJ, proVeriteleJ, uspokojeniJ, uspokojeniInfoJ, rizikoNepovoleniJ, minimalniNutnaSrazkaJ, minimalneProVeriteleJ, coverageJ, totalPrijem1, celkemProVeriteleJ,
+      insM_A, insM_B, srazkaCelkemM, kVyplateCelkemM, proVeriteleM, uspokojeniM, uspokojeniInfoM, rizikoNepovoleniM, minimalniNutnaSrazkaM, minimalneProVeriteleM, coverageM, totalPrijem2, celkemProVeriteleM
     };
   }, [data, params, activeTab]);
 
@@ -263,6 +386,14 @@ const HlavniKalkulackaPage = () => {
     setData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : (type === 'number' ? parseFloat(value) || 0 : value)
+    }));
+  };
+
+  const handleAdditionalSourceToggle = (enabledKey, amountKey, checked) => {
+    setData(prev => ({
+      ...prev,
+      [enabledKey]: checked,
+      ...(checked ? {} : { [amountKey]: '' }),
     }));
   };
 
@@ -811,17 +942,14 @@ const HlavniKalkulackaPage = () => {
                   <h2 className="text-2xl font-bold border-b pb-2">Report: Prognóza oddlužení (Jednotlivec)</h2>
                 </div>
 
-                {results.rizikoNepovoleniJ && (
-                  <div className="p-4 mb-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3 print:border-red-400 print:bg-white">
-                    <AlertCircle className="text-red-600 shrink-0 mt-0.5" size={18} />
-                    <div>
-                      <p className="text-xs font-bold text-red-900 uppercase">Riziko nepovolení oddlužení</p>
-                      <p className="text-[11px] text-red-800 mt-1">
-                        Při zadaných údajích nevychází orientační pravidlo „1 + 1“. Po úhradě správce a běžného výživného musí zbýt ostatním věřitelům alespoň částka odpovídající odměně a hotovým výdajům správce. Pro tento případ vychází potřebná měsíční srážka alespoň <strong>{results.minimalniNutnaSrazkaJ.toLocaleString()} Kč</strong> a pro ostatní věřitele alespoň <strong>{results.minimalneProVeriteleJ.toLocaleString()} Kč</strong>. Výsledek je pouze orientační a nezahrnuje všechny další prioritní pohledávky.
-                      </p>
-                    </div>
-                  </div>
-                )}
+                <MinimumCoveragePanel
+                  coverage={results.coverageJ}
+                  data={data}
+                  onToggle={handleAdditionalSourceToggle}
+                  onAmountChange={handleInputChange}
+                  modeLabel="jednotlivce"
+                  fieldSuffix="1"
+                />
 
                 <div className="grid sm:grid-cols-2 gap-4">
                   <AnalyticCard 
@@ -917,17 +1045,14 @@ const HlavniKalkulackaPage = () => {
                   <h2 className="text-2xl font-bold border-b pb-2">Report: Prognóza oddlužení (Manželé)</h2>
                 </div>
 
-                {results.rizikoNepovoleniM && (
-                  <div className="p-4 mb-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3 print:border-red-400 print:bg-white">
-                    <AlertCircle className="text-red-600 shrink-0 mt-0.5" size={18} />
-                    <div>
-                      <p className="text-xs font-bold text-red-900 uppercase">Riziko nepovolení oddlužení</p>
-                      <p className="text-[11px] text-red-800 mt-1">
-                        Při zadaných údajích nevychází orientační pravidlo „1 + 1“ pro společné oddlužení. Po úhradě správce a běžného výživného musí zbýt ostatním věřitelům alespoň částka odpovídající odměně a hotovým výdajům správce. Pro tento případ vychází potřebná společná měsíční srážka alespoň <strong>{results.minimalniNutnaSrazkaM.toLocaleString()} Kč</strong> a pro ostatní věřitele alespoň <strong>{results.minimalneProVeriteleM.toLocaleString()} Kč</strong>. Výsledek je pouze orientační.
-                      </p>
-                    </div>
-                  </div>
-                )}
+                <MinimumCoveragePanel
+                  coverage={results.coverageM}
+                  data={data}
+                  onToggle={handleAdditionalSourceToggle}
+                  onAmountChange={handleInputChange}
+                  modeLabel="společné oddlužení manželů"
+                  fieldSuffix="M"
+                />
 
                 <div className="grid sm:grid-cols-2 gap-4">
                   <AnalyticCard 
@@ -1008,7 +1133,7 @@ const HlavniKalkulackaPage = () => {
             )}
 
             <div className="mt-8 p-4 bg-slate-100 rounded-xl border border-slate-200 text-[10px] text-slate-500 leading-relaxed print:text-black print:border-none print:bg-transparent">
-              <strong>Doložka o vyloučení odpovědnosti:</strong> Kalkulačka počítá s právním stavem pro mzdy vyplacené v roce 2026 (podle o. s. ř. a nařízení vlády č. 595/2006 Sb.). Výsledky mají pouze orientační charakter. U exekucí vrací kalkulačka celkovou měsíční srážku; nerozpočítává pořadí více souběžných pohledávek mezi jednotlivé věřitele. U oddlužení je procento uspokojení modelem a nezohledňuje všechny jednorázové náklady řízení, mimořádné příjmy ani změny mzdy. Složité souběhy více plátců (např. několik částečných úvazků), detailní pořadí exekucí či zvláštní režimy odstupného a dlužné mzdy vyžadují individuální posouzení účtárny či soudu.
+              <strong>Doložka o vyloučení odpovědnosti:</strong> Kalkulačka počítá s právním stavem pro mzdy vyplacené v roce 2026 (podle o. s. ř. a nařízení vlády č. 595/2006 Sb.). Výsledky mají pouze orientační charakter. U exekucí vrací kalkulačka celkovou měsíční srážku; nerozpočítává pořadí více souběžných pohledávek mezi jednotlivé věřitele. U oddlužení je procento uspokojení modelem a nezohledňuje všechny jednorázové náklady řízení, mimořádné příjmy ani změny mzdy. Kalkulačka neposuzuje skutečnou udržitelnost závazného příslibu, platnost smluv s třetími osobami ani další prioritní pohledávky. Složité souběhy více plátců (např. několik částečných úvazků), detailní pořadí exekucí či zvláštní režimy odstupného a dlužné mzdy vyžadují individuální posouzení účtárny či soudu.
             </div>
           </main>
         </div>

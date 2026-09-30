@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import {
   DEFAULT_2026_PARAMS,
   calculateCreditorSatisfaction,
+  calculateMinimumPaymentCoverage,
   calculateWageDeduction,
   getMinimumInsolvencyPayment,
 } from '../src/lib/calculations2026.js'
@@ -73,6 +74,28 @@ assert.equal(
   }),
   4267,
 )
+
+// Krytí minima je oddělené od zákonné srážky. Doplňkové zdroje se
+// započítávají pouze tehdy, pokud jsou explicitně aktivní.
+const coverage = (overrides = {}) => calculateMinimumPaymentCoverage({
+  statutoryDeduction: 0,
+  requiredMinimum: 2178,
+  debtorPromise: 0,
+  thirdPartyContribution: 0,
+  ...overrides,
+})
+assert.equal(coverage({ statutoryDeduction: 2178 }).coveredByStatutoryDeduction, true)
+assert.equal(coverage({ statutoryDeduction: 2178 }).finalDeficit, 0)
+assert.equal(coverage({ statutoryDeduction: 1900 }).deficitAfterStatutoryDeduction, 278)
+assert.equal(coverage({ statutoryDeduction: 1900, debtorPromise: 278 }).finalDeficit, 0)
+assert.equal(coverage({ statutoryDeduction: 1600, debtorPromise: 300 }).deficitAfterDebtorPromise, 278)
+assert.equal(coverage({ statutoryDeduction: 1600, debtorPromise: 300, thirdPartyContribution: 278 }).finalDeficit, 0)
+assert.equal(coverage({ statutoryDeduction: 1600, debtorPromise: 200, thirdPartyContribution: 100 }).totalAvailable, 1900)
+assert.equal(coverage({ statutoryDeduction: 1600, debtorPromise: 200, thirdPartyContribution: 100 }).finalDeficit, 278)
+assert.equal(coverage({ statutoryDeduction: 2000 }).deficitAfterStatutoryDeduction, 178)
+assert.equal(coverage({ statutoryDeduction: 2000, debtorPromise: 178 }).finalDeficit, 0)
+assert.equal(coverage({ statutoryDeduction: 2000, debtorPromise: '', thirdPartyContribution: '' }).totalAvailable, 2000)
+assert.equal(coverage({ statutoryDeduction: 2000, debtorPromise: 100, thirdPartyContribution: 78 }).totalAvailable, 2178)
 
 const exekuce = calculateWageDeduction(
   {

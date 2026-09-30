@@ -157,6 +157,42 @@ export function getMinimumInsolvencyPayment({
   const baseMinimum = Math.max(Number(configuredMinimum) || 0, 2 * fee)
   return baseMinimum + alimony
 }
+
+/**
+ * Posoudí, zda zákonná srážka a případné pravidelné doplňkové zdroje
+ * pokryjí orientační minimum pro povolení oddlužení.
+ *
+ * Doplňkové zdroje jsou záměrně oddělené od výpočtu zákonné srážky.
+ * Do dlouhodobého modelu uspokojení věřitelů se započítají až tehdy,
+ * pokud je aplikace bude umět evidovat jako skutečně pravidelné plnění.
+ */
+export function calculateMinimumPaymentCoverage({
+  statutoryDeduction = 0,
+  requiredMinimum = 0,
+  debtorPromise = 0,
+  thirdPartyContribution = 0,
+}) {
+  const statutory = Math.max(0, Number(statutoryDeduction) || 0)
+  const required = Math.max(0, Number(requiredMinimum) || 0)
+  const promise = Math.max(0, Number(debtorPromise) || 0)
+  const thirdParty = Math.max(0, Number(thirdPartyContribution) || 0)
+  const totalAvailable = statutory + promise + thirdParty
+
+  return {
+    statutoryDeduction: statutory,
+    requiredMinimum: required,
+    debtorPromise: promise,
+    thirdPartyContribution: thirdParty,
+    totalAvailable,
+    deficitAfterStatutoryDeduction: Math.max(0, required - statutory),
+    deficitAfterDebtorPromise: Math.max(0, required - statutory - promise),
+    finalDeficit: Math.max(0, required - totalAvailable),
+    coveredByStatutoryDeduction: statutory >= required,
+    coveredByDebtorPromise: statutory + promise >= required,
+    coveredWithAdditionalSources: totalAvailable >= required,
+  }
+}
+
 export function calculateCreditorSatisfaction({
   availableForCreditors,
   unsecuredDebt,
@@ -187,4 +223,3 @@ export function calculateCreditorSatisfaction({
     isFullySatisfied: actualPayment >= debt,
   }
 }
-
