@@ -274,8 +274,10 @@ const HlavniKalkulackaPage = () => {
       // Parametry dlužníka 1
       vyzivovaneOsoby1: 0, 
       osobySVykonemProVyzivne1: 0, 
-      maManzelaPartnera1: false,
-      partnerMaKvalifikovanyDuchod1: false,
+      // Jeden zjednodušený údaj pro započtení manžela/partnera u jednotlivce.
+      // Pokud má rozhodný důchod sám dlužník, checkbox znamená pouze existenci manžela/partnera.
+      // Pokud dlužník rozhodný důchod nemá, checkbox znamená manžela/partnera s rozhodným důchodem.
+      partnerProNezabavitelnou1: false,
       bezneMesicniVyzivne1: 0,
       // Doplňkové zdroje pro krytí minima oddlužení (jednotlivec)
       povolitPrislibDluznika1: false,
@@ -324,8 +326,11 @@ const HlavniKalkulackaPage = () => {
         if (Number(parsed.prijemDalsi2) > 0) legacy.push({ id: 'p2-jiny', typ: 'jiny', castka: Number(parsed.prijemDalsi2), pridelenaNezabavitelna: '' });
         migrated.prijmy2 = legacy.length ? legacy : defaultData.prijmy2;
       }
-      if (parsed.duchodPartner1 && parsed.partnerMaKvalifikovanyDuchod1 === undefined) {
-        migrated.partnerMaKvalifikovanyDuchod1 = true;
+      if (parsed.partnerProNezabavitelnou1 === undefined) {
+        const debtorHasQualifyingPension = hasQualifyingPension(migrated.prijmy1);
+        migrated.partnerProNezabavitelnou1 = debtorHasQualifyingPension
+          ? Boolean(parsed.maManzelaPartnera1)
+          : Boolean(parsed.maManzelaPartnera1 && (parsed.partnerMaKvalifikovanyDuchod1 || parsed.duchodPartner1));
       }
       return migrated;
     } catch { 
@@ -447,9 +452,10 @@ const HlavniKalkulackaPage = () => {
     const pocetVyzD1 = spolecneDetiD1 + data.vyzivovaneOsoby1;
     const pocetVyzD2 = data.spolecneDeti + data.vyzivovaneOsoby2;
 
+    const partnerRelevant1 = Boolean(data.partnerProNezabavitelnou1);
     const partnerQualifying1 = activeTab === 'manzele'
       ? duchodPovinny2
-      : Boolean(data.partnerMaKvalifikovanyDuchod1);
+      : partnerRelevant1 && !duchodPovinny1;
     const partnerQualifying2 = duchodPovinny1;
 
     // --- Exekuce (dlužník 1) ---
@@ -458,7 +464,7 @@ const HlavniKalkulackaPage = () => {
       multiplePayers: data.vicePlatcu1,
       chranenyPrijem: data.chranenePrijmy1,
       pocetVyz: pocetVyzD1,
-      maPartnera: activeTab === 'manzele' ? true : data.maManzelaPartnera1,
+      maPartnera: activeTab === 'manzele' ? true : partnerRelevant1,
       duchodPartner: partnerQualifying1,
       vykonProVyzivne: data.osobySVykonemProVyzivne1,
       typ: data.typPohledavky,
@@ -473,8 +479,8 @@ const HlavniKalkulackaPage = () => {
       multiplePayers: data.vicePlatcu1,
       chranenyPrijem: data.chranenePrijmy1,
       pocetVyz: pocetVyzD1,
-      maPartnera: data.maManzelaPartnera1,
-      duchodPartner: Boolean(data.partnerMaKvalifikovanyDuchod1),
+      maPartnera: partnerRelevant1,
+      duchodPartner: partnerRelevant1 && !duchodPovinny1,
       vykonProVyzivne: data.osobySVykonemProVyzivne1,
       typ: 'prednostni',
       pocetExekuci: '1-3',
@@ -755,22 +761,25 @@ const HlavniKalkulackaPage = () => {
                 </div>
 
                 {activeTab !== 'manzele' && (
-                  <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-200 space-y-2">
+                  <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-200">
                     <label className="flex items-start gap-2 cursor-pointer w-fit">
-                      <input type="checkbox" name="maManzelaPartnera1" checked={data.maManzelaPartnera1} onChange={handleInputChange} className="mt-0.5 accent-blue-600" />
-                      <Tooltip text="Zaškrtněte, pokud máte manžela, manželku nebo registrovaného partnera. Samo o sobě to ale vaši nezabavitelnou částku nezvýší.">
-                        <span className="text-xs font-bold text-slate-700 cursor-help border-b border-dotted border-slate-400">Mám manžela/manželku nebo partnera/partnerku</span>
-                      </Tooltip>
-                    </label>
-                    
-                    {data.maManzelaPartnera1 && (
-                      <label className="flex items-start gap-2 cursor-pointer pl-6 w-fit">
-                        <input type="checkbox" name="partnerMaKvalifikovanyDuchod1" checked={data.partnerMaKvalifikovanyDuchod1} onChange={handleInputChange} className="mt-0.5 accent-blue-600" />
-                        <Tooltip text="Manžel/partner se započítává jednou čtvrtinou nezabavitelné částky pouze tehdy, pokud byl takový důchod přiznán vám nebo jemu/jí. Zaškrtněte jen případ, kdy je kvalifikovaný důchod přiznán manželovi/partnerovi; váš vlastní typ důchodu kalkulačka pozná z příjmů.">
-                          <span className="text-[10px] font-medium text-slate-600 leading-tight cursor-help border-b border-dotted border-slate-400">Manžel/partner má přiznaný starobní, invalidní důchod II./III. stupně nebo sirotčí důchod.</span>
+                      <input
+                        type="checkbox"
+                        name="partnerProNezabavitelnou1"
+                        checked={Boolean(data.partnerProNezabavitelnou1)}
+                        onChange={handleInputChange}
+                        className="mt-0.5 accent-blue-600"
+                      />
+                      {results.duchodPovinny1 ? (
+                        <Tooltip text="Z typu vašeho příjmu kalkulačka poznala rozhodný důchod. Pokud máte manžela/manželku nebo partnera/partnerku, započte se na něj/ni jedna čtvrtina nezabavitelné částky.">
+                          <span className="text-xs font-bold text-slate-700 cursor-help border-b border-dotted border-slate-400">Mám manžela/manželku nebo partnera/partnerku</span>
                         </Tooltip>
-                      </label>
-                    )}
+                      ) : (
+                        <Tooltip text="Zaškrtněte pouze tehdy, pokud máte manžela/manželku nebo partnera/partnerku, kterému/které byl přiznán starobní důchod, invalidní důchod II. nebo III. stupně nebo sirotčí důchod. V takovém případě se na něj/ni započte jedna čtvrtina nezabavitelné částky.">
+                          <span className="text-xs font-bold text-slate-700 cursor-help border-b border-dotted border-slate-400">Manžel/partner pobírá důchod rozhodný pro zvýšení nezabavitelné částky</span>
+                        </Tooltip>
+                      )}
+                    </label>
                   </div>
                 )}
 
