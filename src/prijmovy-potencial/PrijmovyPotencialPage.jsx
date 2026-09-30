@@ -59,7 +59,6 @@ const genderOptions = ['Muž', 'Žena']
 
 const disabilityOptions = [
   { value: 'bez', label: 'Bez postižení' },
-  { value: 'ztp', label: 'ZTP' },
   { value: 'ztp-p', label: 'ZTP/P' },
   { value: 'invalidita1', label: 'Invalidita I. stupně' },
   { value: 'invalidita2', label: 'Invalidita II. stupně' },
@@ -126,10 +125,10 @@ function validatePotentialInput(data) {
   if (!data.vzdelani) errors.push('Vyberte vzdělání.')
   if (!data.region) errors.push('Vyberte region.')
   if (!data.czNace) errors.push('Vyberte obor činnosti.')
-  if (!data.pozadovanyPercentil) errors.push('Vyberte požadovaný percentil.')
+  if (!data.pozadovanyPercentil) errors.push('Vyberte zvolený percentil srovnávací skupiny.')
   if (Number(data.uvazek) <= 0) errors.push('Úvazek musí být větší než 0.')
   if (Number(data.pocetDetiZtpP) > Number(data.pocetDetiProBonus)) {
-    errors.push('Počet dětí ZTP/P nemůže být vyšší než počet dětí pro bonus.')
+    errors.push('Počet dětí ZTP/P nemůže být vyšší než počet dětí uplatňovaných pro daňové zvýhodnění.')
   }
 
   return errors
@@ -172,9 +171,9 @@ function getGrossIncomeByPercentile(data, matchedRow) {
   let porovnaniText = 'Odhad vychází ze statistické skupiny s podobnými charakteristikami.'
   if (Number(data.aktualniHrubyPrijem) > 0) {
     if (pozadovanyHrubyPrijem > Number(data.aktualniHrubyPrijem)) {
-      porovnaniText = 'Požadovaný hrubý příjem je vyšší než aktuálně zadaný hrubý příjem.'
+      porovnaniText = 'Modelový hrubý příjem je vyšší než aktuálně zadaný hrubý příjem.'
     } else {
-      porovnaniText = 'Požadovaný hrubý příjem nepřevyšuje aktuálně zadaný hrubý příjem.'
+      porovnaniText = 'Modelový hrubý příjem nepřevyšuje aktuálně zadaný hrubý příjem.'
     }
   }
 
@@ -253,7 +252,7 @@ function calculateOddluzeniImpact(data, cistyPrijem) {
   const minimalniNutneMesicniPlneni = getMinimumInsolvencyPayment({
     administratorFee: odmenaSpravce,
     ordinaryAlimony: bezneVyzivne,
-    configuredMinimum: DEFAULT_2026_PARAMS.minSplatkaJednotlivec,
+    configuredMinimum: 0,
   })
   const rizikoMinimalniSplatky =
     celkoveMesicniPlneni < minimalniNutneMesicniPlneni ||
@@ -500,7 +499,7 @@ export default function PrijmovyPotencialPage() {
                   </Select>
                 </Field>
 
-                <Field label="Region" help="Kraj podle číselníku převzatého z nástroje.">
+                <Field label="Region pro statistické srovnání" help="Kraj používaný pouze pro výběr statistické srovnávací skupiny.">
                   <Select name="region" value={data.region} onChange={handleInputChange}>
                     <option value="">Vyberte</option>
                     {regionOptions.map((option) => (
@@ -509,7 +508,7 @@ export default function PrijmovyPotencialPage() {
                   </Select>
                 </Field>
 
-                <Field label="Obor činnosti (CZ-NACE)" help="Konkrétní položka se interně převádí do seskupené statistické skupiny.">
+                <Field label="Obor výdělečné činnosti" help="Vyberte obor podle CZ-NACE; položka se interně převádí do seskupené statistické skupiny.">
                   <Select name="czNace" value={data.czNace} onChange={handleInputChange}>
                     <option value="">Vyberte</option>
                     {naceOptions.map((option) => (
@@ -518,7 +517,7 @@ export default function PrijmovyPotencialPage() {
                   </Select>
                 </Field>
 
-                <Field label="Úvazek" help="Např. 1 = plný úvazek, 0,5 = poloviční.">
+                <Field label="Rozsah úvazku" help="Zadejte poměr úvazku, např. 1 = 100 %, 0,75 = 75 %, 0,5 = 50 %.">
                   <NumberInput name="uvazek" value={data.uvazek} onChange={handleInputChange} step="0.1" min="0.1" max="1.5" />
                 </Field>
               </div>
@@ -541,11 +540,11 @@ export default function PrijmovyPotencialPage() {
                   <NumberInput name="aktualniHrubyPrijem" value={data.aktualniHrubyPrijem} onChange={handleInputChange} />
                 </Field>
 
-                <Field label="Nejvyšší minulý hrubý příjem" help="Historicky nejvyšší doložený hrubý příjem.">
+                <Field label="Nejvyšší doložený hrubý příjem v posuzovaném období" help="Nejvyšší doložený hrubý měsíční příjem, který je relevantní pro posouzení výdělečných možností dlužníka.">
                   <NumberInput name="nejvyssiMinulyHrubyPrijem" value={data.nejvyssiMinulyHrubyPrijem} onChange={handleInputChange} />
                 </Field>
 
-                <Field label="Požadovaný percentil" help="Vyjadřuje úroveň příjmů v rámci srovnatelné statistické skupiny.">
+                <Field label="Zvolený percentil srovnávací skupiny" help="Statistická úroveň příjmu v rámci srovnávací skupiny. Percentil není sám o sobě právně závazným příjmovým cílem.">
                   <Select name="pozadovanyPercentil" value={data.pozadovanyPercentil} onChange={handleInputChange}>
                     {percentileOptions.map((value) => (
                       <option key={value} value={value}>{value}. percentil</option>
@@ -575,7 +574,7 @@ export default function PrijmovyPotencialPage() {
                   Sleva na pojistném pro pracujícího důchodce
                 </label>
 
-                <Field label="Počet dětí pro bonus" help="Počet dětí uplatněných pro daňový bonus.">
+                <Field label="Počet dětí uplatňovaných pro daňové zvýhodnění" help="Počet vyživovaných dětí, na které se v orientačním výpočtu uplatňuje daňové zvýhodnění. Daňový bonus je pouze případný výsledek po odečtení zvýhodnění od daně.">
                   <NumberInput name="pocetDetiProBonus" value={data.pocetDetiProBonus} onChange={handleInputChange} min={0} />
                 </Field>
 
@@ -583,7 +582,7 @@ export default function PrijmovyPotencialPage() {
                   <NumberInput name="pocetDetiZtpP" value={data.pocetDetiZtpP} onChange={handleInputChange} min={0} />
                 </Field>
 
-                <Field label="Postižení" help="Osobní měsíční sleva: invalidita I./II. 210 Kč, III. 420 Kč, průkaz ZTP/P 1 345 Kč. Samotný průkaz ZTP bez /P zde slevu nepřidává.">
+                <Field label="Daňová sleva – invalidita / ZTP/P" help="Orientační měsíční sleva na dani podle zvoleného statusu. Samotný průkaz ZTP bez /P tuto slevu nezakládá.">
                   <Select name="postizeni" value={data.postizeni} onChange={handleInputChange}>
                     {disabilityOptions.map((option) => (
                       <option key={option.value} value={option.value}>{option.label}</option>
@@ -610,22 +609,22 @@ export default function PrijmovyPotencialPage() {
               </label>
 
               <div className={cn('grid gap-4 md:grid-cols-2', !data.zapnoutDopadDoOddluzeni && 'opacity-50')}>
-                <Field label="Počet vyživovaných osob" help="Počet osob, za které se při výpočtu nezabavitelné částky uplatní jedna čtvrtina. Specifické započtení manžela/partnera podle důchodového režimu zde není automatizováno.">
+                <Field label="Vyživované osoby započitatelné do nezabavitelné částky" help="Počet osob, za které se při výpočtu nezabavitelné částky uplatní jedna čtvrtina. Modul příjmového potenciálu nezná typ důchodu manžela/partnera, proto případné zvláštní započtení partnera zohledněte v tomto počtu pouze tehdy, pokud jsou splněny zákonné podmínky.">
                   <NumberInput name="pocetVyzivovanychOsob" value={data.pocetVyzivovanychOsob} onChange={handleInputChange} min={0} disabled={!data.zapnoutDopadDoOddluzeni} />
                 </Field>
 
-                <Field label="Běžné měsíční výživné" help="Průběžné zákonné výživné hrazené přednostně z měsíčního plnění v oddlužení.">
+                <Field label="Běžné zákonné výživné" help="Běžné zákonné výživné hrazené v průběhu oddlužení před rozdělením zbytku mezi nezajištěné věřitele.">
                   <NumberInput name="bezneMesicniVyzivne" value={data.bezneMesicniVyzivne} onChange={handleInputChange} min={0} disabled={!data.zapnoutDopadDoOddluzeni} />
                 </Field>
 
-                <Field label="Délka oddlužení" help="Standardně 36 měsíců.">
+                <Field label="Délka oddlužení" help="Standardně 3 roky; 5 let zejména při předchozím osvobození v posledních 20 letech.">
                   <Select name="delkaOddluzeni" value={data.delkaOddluzeni} onChange={handleInputChange} disabled={!data.zapnoutDopadDoOddluzeni}>
-                    <option value={36}>36 měsíců</option>
-                    <option value={60}>60 měsíců</option>
+                    <option value={36}>3 roky – standardní doba</option>
+                    <option value={60}>5 let – předchozí osvobození v posledních 20 letech</option>
                   </Select>
                 </Field>
 
-                <Field label="Nezajištěné dluhy" help="Základ pro výpočet míry uspokojení.">
+                <Field label="Nezajištěné pohledávky věřitelů" help="Odhad celkové výše nezajištěných pohledávek, vůči kterým se orientačně počítá míra uspokojení. Skutečný základ se může lišit podle výsledku přezkumu pohledávek.">
                   <NumberInput
                     name="nezajisteneDluhy"
                     min={0}
@@ -638,11 +637,11 @@ export default function PrijmovyPotencialPage() {
                   />
                 </Field>
 
-                <Field label="Závazný příslib" help="Pravidelný příspěvek dlužníka navíc.">
+                <Field label="Závazný příslib dlužníka" help="Pravidelné dobrovolné plnění dlužníka z nezabavitelné částky nebo jiných nepostižitelných příjmů. Nesmí ohrozit základní potřeby dlužníka ani vyživovaných osob. Pokud částku zadáte, model předpokládá její placení každý měsíc po celou zadanou dobu oddlužení.">
                   <NumberInput name="zavaznyPrislib" value={data.zavaznyPrislib} onChange={handleInputChange} disabled={!data.zapnoutDopadDoOddluzeni} />
                 </Field>
 
-                <Field label="Plnění třetí osoby" help="Pravidelné plnění od třetí osoby.">
+                <Field label="Plnění třetí osoby" help="Pravidelné plnění třetí osoby, například na základě darovací smlouvy nebo smlouvy o důchodu. Model neposuzuje platnost závazku ani schopnost třetí osoby plnit a při zadání částky předpokládá její placení každý měsíc po celou zadanou dobu.">
                   <NumberInput name="pravidelnePlneniTretiOsoby" value={data.pravidelnePlneniTretiOsoby} onChange={handleInputChange} disabled={!data.zapnoutDopadDoOddluzeni} />
                 </Field>
 
@@ -650,7 +649,7 @@ export default function PrijmovyPotencialPage() {
                   <NumberInput name="mimoradnaSplatka" value={data.mimoradnaSplatka} onChange={handleInputChange} disabled={!data.zapnoutDopadDoOddluzeni} />
                 </Field>
 
-                <Field label="Výtěžek zpeněžení" help="Odhad výtěžku ze zpeněžení majetku.">
+                <Field label="Výtěžek zpeněžení dostupný nezajištěným věřitelům" help="Odhad částky z případného zpeněžení, která bude po nákladech a zohlednění práv třetích osob dostupná nezajištěným věřitelům.">
                   <NumberInput name="vytezekZpenezeni" value={data.vytezekZpenezeni} onChange={handleInputChange} disabled={!data.zapnoutDopadDoOddluzeni} />
                 </Field>
               </div>
@@ -659,16 +658,16 @@ export default function PrijmovyPotencialPage() {
 
           <main className="space-y-6 lg:col-span-7">
             <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              <SummaryCard icon={Users} title="Podobné osoby" value={formatCurrency(results.pocetPodobnychOsob)} subtitle="Počet zaměstnanců v odpovídající statistické skupině" color="blue" />
-              <SummaryCard icon={Briefcase} title="Požadovaný hrubý" value={`${formatCurrency(results.pozadovanyHrubyPrijem)} Kč`} subtitle="Odhad podle zvoleného percentilu" color="indigo" />
-              <SummaryCard icon={Wallet} title="Požadovaný čistý" value={`${formatCurrency(results.pozadovanyCistyPrijem)} Kč`} subtitle="Orientační čistý příjem po slevách" color="green" />
-              <SummaryCard icon={Percent} title="Aktuální vs. potenciál" value={`${formatCurrency(data.aktualniHrubyPrijem)} / ${formatCurrency(results.pozadovanyHrubyPrijem)}`} subtitle="Aktuální hrubý příjem vs. požadovaný hrubý příjem" color="amber" />
+              <SummaryCard icon={Users} title="Velikost srovnávací skupiny" value={formatCurrency(results.pocetPodobnychOsob)} subtitle="Počet zaměstnanců v odpovídající statistické skupině" color="blue" />
+              <SummaryCard icon={Briefcase} title="Modelový hrubý příjem" value={`${formatCurrency(results.pozadovanyHrubyPrijem)} Kč`} subtitle="Statistický odhad podle zvoleného percentilu" color="indigo" />
+              <SummaryCard icon={Wallet} title="Modelový čistý příjem" value={`${formatCurrency(results.pozadovanyCistyPrijem)} Kč`} subtitle="Orientační čistý příjem po slevách" color="green" />
+              <SummaryCard icon={Percent} title="Aktuální vs. modelový příjem" value={`${formatCurrency(data.aktualniHrubyPrijem)} / ${formatCurrency(results.pozadovanyHrubyPrijem)}`} subtitle="Aktuální hrubý příjem vs. statisticky modelovaný hrubý příjem" color="amber" />
               <SummaryCard icon={Landmark} title="Měsíčně pro věřitele" value={`${formatCurrency(results.mesicneProVeritele)} Kč`} subtitle="Po odměně správce a zadaném běžném výživném" color="blue" />
               <SummaryCard
                 icon={FileBarChart}
-                title="Celková míra uspokojení"
+                title="Modelová míra uspokojení"
                 value={editingNezajisteneDluhy ? '—' : formatPercent(results.celkovaMiraUspokojeni)}
-                subtitle={editingNezajisteneDluhy ? 'Přepočítá se po potvrzení částky dluhů' : 'Orientační model pro nezajištěné věřitele; maximum 100 %'}
+                subtitle={editingNezajisteneDluhy ? 'Přepočítá se po potvrzení částky dluhů' : 'Orientační modelová míra uspokojení nezajištěných pohledávek; maximum 100 %'}
                 color="indigo"
               />
             </section>
@@ -721,10 +720,10 @@ export default function PrijmovyPotencialPage() {
               </div>
               <div className="space-y-3 text-sm leading-relaxed text-slate-600">
                 <p>
-                  Tato stránka používá statistická data z podkladového XLSM. Dopad do oddlužení je napojen na stejné výpočtové jádro srážek pro rok 2026 jako hlavní kalkulačka. Přepočet čisté mzdy je orientační mzdový model; nezohledňuje všechny zvláštní režimy pojistného, více zaměstnavatelů ani roční daňové zúčtování.
+                  Tato stránka používá statistická data z podkladového XLSM jako orientační srovnávací vodítko; statistický percentil sám o sobě neurčuje právně závazný příjem dlužníka. Dopad do oddlužení je napojen na stejné výpočtové jádro srážek pro rok 2026 jako hlavní kalkulačka. Přepočet čisté mzdy je orientační mzdový model; nezohledňuje všechny zvláštní režimy pojistného, více zaměstnavatelů ani roční daňové zúčtování.
                 </p>
                 <p>
-                  Pokud nebude nalezena odpovídající statistická skupina, zkontroluj hlavně kombinaci regionu, vzdělání, věku a oboru CZ-NACE.
+                  Pokud nebude nalezena odpovídající statistická skupina, zkontroluj hlavně kombinaci regionu, vzdělání, věku a oboru CZ-NACE. Pokud zadáš závazný příslib nebo plnění třetí osoby, model uspokojení předpokládá, že se tato částka poskytuje pravidelně každý měsíc po celou zadanou dobu oddlužení.
                 </p>
               </div>
             </section>

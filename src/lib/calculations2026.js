@@ -32,6 +32,7 @@ export function calculateWageDeduction(
     pocetExekuci = '1-3',
     uplatnitPausal = false,
     mode = 'exekuce',
+    nezabavitelnaOverride = null,
   },
   params = DEFAULT_2026_PARAMS,
 ) {
@@ -56,7 +57,11 @@ export function calculateWageDeduction(
   const pocetCtvrtin = Math.max(0, pocetVsechOsob - safeVykonProVyzivne)
 
   const celkovaNezabavitelnaRaw = zakladNaPovinneho + pocetCtvrtin * jednaCtvrtina
-  const legalniNezabavitelnaCastka = Math.ceil(celkovaNezabavitelnaRaw)
+  const vypoctenaNezabavitelnaCastka = Math.ceil(celkovaNezabavitelnaRaw)
+  const hasNezabavitelnaOverride = nezabavitelnaOverride !== null && nezabavitelnaOverride !== undefined && nezabavitelnaOverride !== ''
+  const legalniNezabavitelnaCastka = hasNezabavitelnaOverride
+    ? Math.max(0, Number(nezabavitelnaOverride) || 0)
+    : vypoctenaNezabavitelnaCastka
   const zbytekMzdy = safePrijem - legalniNezabavitelnaCastka
 
   if (zbytekMzdy <= 0) {
@@ -86,6 +91,8 @@ export function calculateWageDeduction(
       vykonProVyzivne: safeVykonProVyzivne,
       pocetCtvrtin,
       celkovaNezabavitelnaRaw,
+      vypoctenaNezabavitelnaCastka,
+      nezabavitelnaOverridePouzita: hasNezabavitelnaOverride,
     }
   }
 
@@ -96,7 +103,7 @@ export function calculateWageDeduction(
   const zaokrouhlovaciZbytek = castDoLimitu - castDoTretin
 
   const has4Plus = pocetExekuci === '4+'
-  const exception4Plus = Boolean(duchodPovinny && tretina < Number(params.limit4PlusPension || 0))
+  const exception4Plus = Boolean(duchodPovinny && tretina < Number(params.odmenaSpravceJednotlivec || 0))
   const apply4PlusRule = has4Plus && !exception4Plus
 
   const isPriority = typ === 'prednostni' || typ === 'vyzivne' || mode === 'insolvence'
@@ -110,7 +117,7 @@ export function calculateWageDeduction(
     nahradaPlatci = Math.min(Number(params.pausalniNahradaPlatce || 0), Math.ceil(srazka / 3))
   }
 
-  const maxPrednostniFond = typ === 'vyzivne' ? tretina + plneZabavitelnaCast : 0
+  const maxPrednostniFond = 0
 
   return {
     srazka,
@@ -141,6 +148,8 @@ export function calculateWageDeduction(
     vykonProVyzivne: safeVykonProVyzivne,
     pocetCtvrtin,
     celkovaNezabavitelnaRaw,
+    vypoctenaNezabavitelnaCastka,
+    nezabavitelnaOverridePouzita: hasNezabavitelnaOverride,
   }
 }
 

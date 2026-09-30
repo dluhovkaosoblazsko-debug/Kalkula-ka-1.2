@@ -112,6 +112,73 @@ assert.equal(exekuce.nahradaPlatci, 50)
 assert.equal(exekuce.srazkaCista, 1916)
 assert.equal(exekuce.kVyplate, 18034)
 
+
+// Manžel/partner se započítá jen při relevantním důchodu povinného nebo partnera.
+const spouseByDebtorPension = calculateWageDeduction({
+  prijem: 25000,
+  pocetVyz: 0,
+  maPartnera: true,
+  duchodPovinny: true,
+  duchodPartner: false,
+}, DEFAULT_2026_PARAMS)
+assert.equal(spouseByDebtorPension.partnerZapocitan, true)
+assert.equal(spouseByDebtorPension.legalniMinimum, 17627)
+
+const spouseByPartnerPension = calculateWageDeduction({
+  prijem: 25000,
+  pocetVyz: 0,
+  maPartnera: true,
+  duchodPovinny: false,
+  duchodPartner: true,
+}, DEFAULT_2026_PARAMS)
+assert.equal(spouseByPartnerPension.partnerZapocitan, true)
+assert.equal(spouseByPartnerPension.legalniMinimum, 17627)
+
+const spouseNoPension = calculateWageDeduction({
+  prijem: 25000,
+  pocetVyz: 0,
+  maPartnera: true,
+  duchodPovinny: false,
+  duchodPartner: false,
+}, DEFAULT_2026_PARAMS)
+assert.equal(spouseNoPension.partnerZapocitan, false)
+assert.equal(spouseNoPension.legalniMinimum, 14102)
+
+// Při více plátcích lze přesně použít část nezabavitelné částky určenou konkrétnímu plátci.
+const payerA = calculateWageDeduction({
+  prijem: 18000,
+  pocetVyz: 0,
+  typ: 'prednostni',
+  mode: 'insolvence',
+  nezabavitelnaOverride: 8000,
+}, DEFAULT_2026_PARAMS)
+const payerB = calculateWageDeduction({
+  prijem: 12000,
+  pocetVyz: 0,
+  typ: 'prednostni',
+  mode: 'insolvence',
+  nezabavitelnaOverride: 6102,
+}, DEFAULT_2026_PARAMS)
+assert.equal(payerA.nezabavitelnaOverridePouzita, true)
+assert.equal(payerB.nezabavitelnaOverridePouzita, true)
+assert.equal(payerA.legalniMinimum + payerB.legalniMinimum, 14102)
+
+// Limit výjimky u 4+ se odvozuje od měsíční odměny a hotových výdajů správce,
+// nikoli ze samostatně editovatelného parametru.
+const alteredLimitParam = {
+  ...DEFAULT_2026_PARAMS,
+  limit4PlusPension: 1,
+  odmenaSpravceJednotlivec: 1089,
+}
+const pensionException = calculateWageDeduction({
+  prijem: 17368,
+  duchodPovinny: true,
+  typ: 'neprednostni',
+  pocetExekuci: '4+',
+  mode: 'exekuce',
+}, alteredLimitParam)
+assert.equal(pensionException.exception4PlusApplied, true)
+
 assert.equal(getChildTaxAdvantage(1, 0), 1267)
 assert.equal(getChildTaxAdvantage(2, 0), 3127)
 assert.equal(getChildTaxAdvantage(3, 0), 5447)
