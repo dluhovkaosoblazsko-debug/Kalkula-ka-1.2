@@ -1177,11 +1177,28 @@ const HlavniKalkulackaPage = () => {
                     color="indigo" 
                     subtitle="Modelová částka po odečtení správce a zadaného běžného výživného."
                   >
-                    <div className="flex justify-between items-center text-[11px] text-green-800 bg-green-50 p-2.5 rounded mt-2 border border-green-100">
-                      <Tooltip text="Část zadaných příjmů, která po zákonné srážce zůstává dlužníkovi, včetně zadaných jiných příjmů nepodléhajících srážkám. Pokud je použit závazný příslib, jeho částka se zde zatím neodečítá.">
-                        <span className="cursor-help border-b border-dotted border-green-400">Dlužníkovi po srážce zůstává</span>
-                      </Tooltip>
-                      <strong className="text-sm">{results.insJ.kVyplate.toLocaleString()} Kč</strong>
+                    <div className="text-[11px] text-green-800 bg-green-50 p-2.5 rounded mt-2 border border-green-100 space-y-1.5">
+                      <div className="flex justify-between items-center gap-3">
+                        <Tooltip text="Jde o částku, která dlužníkovi zůstává po provedení zákonné srážky, ještě před případným dobrovolným plněním ze závazného příslibu. Pokud je příslib zadán, níže se odečte a zobrazí se částka, která dlužníkovi po příslibu skutečně zbývá.">
+                          <span className="cursor-help border-b border-dotted border-green-400">
+                            {results.coverageJ.debtorPromise > 0 ? 'Po zákonné srážce zůstává' : 'Dlužníkovi po zákonné srážce zůstává'}
+                          </span>
+                        </Tooltip>
+                        <strong className="text-sm whitespace-nowrap">{results.insJ.kVyplate.toLocaleString()} Kč</strong>
+                      </div>
+
+                      {results.coverageJ.debtorPromise > 0 && (
+                        <>
+                          <div className="flex justify-between items-center gap-3 text-slate-600">
+                            <span>Závazný příslib dlužníka</span>
+                            <strong className="whitespace-nowrap">−{Math.round(results.coverageJ.debtorPromise).toLocaleString()} Kč</strong>
+                          </div>
+                          <div className="flex justify-between items-center gap-3 pt-1.5 border-t border-green-200 font-bold text-green-900">
+                            <span>Dlužníkovi po příslibu zbývá</span>
+                            <strong className="text-sm whitespace-nowrap">{Math.max(0, Math.round(results.insJ.kVyplate - results.coverageJ.debtorPromise)).toLocaleString()} Kč</strong>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </AnalyticCard>
                 </div>
