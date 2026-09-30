@@ -3,6 +3,7 @@ import {
   Calculator, Users, User, Info, AlertCircle,
   ShieldAlert, Settings, Layers, Printer, Gavel
 } from 'lucide-react';
+import { DEFAULT_2026_PARAMS, calculateCreditorSatisfaction, calculateWageDeduction, getMinimumInsolvencyPayment } from '../lib/calculations2026';
 
 // --- POMOCNÁ KOMPONENTA PRO TOOLTIPY ---
 const Tooltip = ({ children, text }) => (
@@ -60,25 +61,13 @@ const colorMap = {
   },
 }
 
-const App = () => {
+const HlavniKalkulackaPage = () => {
   const [activeTab, setActiveTab] = useState('jednotlivec');
   const [isLoaded, setIsLoaded] = useState(false);
 
   // --- LEGISLATIVNÍ DATA (Stav pro výplaty v roce 2026) ---
   const [params, setParams] = useState(() => {
-    const defaultParams = {
-      zivotniMinimum: 4860,
-      normativniNajemne: 9430, // Pro srážky se používá vždy tento standardní normativ
-      energetickyPausal: 2300,
-      odmenaSpravceJednotlivec: 1089,
-      odmenaSpravceManzele: 1633.5,
-      pausalniNahradaPlatce: 50,
-      koeficientZahladu: 85, // v procentech
-      koeficientZabavitelnosti: 1.9,
-      limit4PlusPension: 1089, // Fixní práh pro výjimku
-      minSplatkaJednotlivec: 2178, // Doplněno
-      minSplatkaManzele: 3267 // Doplněno
-    };
+    const defaultParams = { ...DEFAULT_2026_PARAMS };
     try {
       const saved = localStorage.getItem('insCalcParams2026_v10');
       return saved ? { ...defaultParams, ...JSON.parse(saved) } : defaultParams;
@@ -144,107 +133,31 @@ const App = () => {
     setIsLoaded(true);
   }, [params, data]);
 
-  // --- JÁDRO VÝPOČTU ---
-  const calculateResult = ({
-    prijem, 
-    chranenyPrijem = 0, 
-    pocetVyz, 
-    maPartnera, 
-    duchodPovinny, 
-    duchodPartner, 
-    vykonProVyzivne, 
-    typ, 
-    pocetExekuci, 
-    uplatnitPausal, 
-    mode = 'exekuce'
-  }) => {
-    
-    const soucetZakladu = params.zivotniMinimum + params.normativniNajemne + params.energetickyPausal;
-    
-    const zakladNaPovinneho = soucetZakladu * (params.koeficientZahladu / 100); 
-    const jednaCtvrtina = zakladNaPovinneho / 4;    
+  // Nezajištěný dluh se při psaní drží jako textový koncept.
+  // Do výpočtu se promítne až po opuštění pole / potvrzení Enterem,
+  // aby rozepsaná částka (např. 6 při zadávání 600 000) nevytvářela
+  // dočasně nesmyslné procento uspokojení.
+  const [dluhyNezajisteneDraft, setDluhyNezajisteneDraft] = useState(() => String(data.dluhyNezajistene ?? ''));
+  const [editingDluhyNezajistene, setEditingDluhyNezajistene] = useState(false);
 
-    const zapocitatPartnera = maPartnera && (duchodPovinny || duchodPartner);
-
-    const pocetVsechOsob = pocetVyz + (zapocitatPartnera ? 1 : 0);
-    let pocetCtvrtin = pocetVsechOsob;
-    pocetCtvrtin = Math.max(0, pocetCtvrtin - vykonProVyzivne);
-
-    const celkovaNezabavitelnaRaw = zakladNaPovinneho + (pocetCtvrtin * jednaCtvrtina);
-    const legalniNezabavitelnaCastka = Math.ceil(celkovaNezabavitelnaRaw);
-
-    const zbytekMzdy = prijem - legalniNezabavitelnaCastka;
-    if (zbytekMzdy <= 0) {
-      return { 
-        srazka: 0, srazkaCista: 0, nahradaPlatci: 0, kVyplate: prijem + chranenyPrijem, kVyplateZeSrazek: prijem,
-        legalniMinimum: legalniNezabavitelnaCastka, tretina: 0, plneZabavitelna: 0, zbytekKDeleni: 0, zaokrouhlovaciZbytek: 0,
-        forceTwoThirds: false, exception4PlusApplied: false, maxPrednostniFond: 0, hranicePlneZabavitelna: 0,
-        zbytekMzdyRaw: zbytekMzdy, prijemPredSrazkou: prijem, partnerZapocitan: zapocitatPartnera,
-        zakladNaPovinneho, jednaCtvrtina, pocetVsechOsob, vykonProVyzivne, pocetCtvrtin, celkovaNezabavitelnaRaw
-      };
-    }
-
-    const hranicePlneZabavitelna = Math.floor(soucetZakladu * params.koeficientZabavitelnosti);
-
-    const plneZabavitelnaCast = Math.max(0, zbytekMzdy - hranicePlneZabavitelna);
-    const castDoLimitu = Math.min(zbytekMzdy, hranicePlneZabavitelna);
-
-    const castDoTretin = Math.floor(castDoLimitu / 3) * 3;
-    const tretina = castDoTretin / 3;
-    const zaokrouhlovaciZbytek = castDoLimitu - castDoTretin;
-
-    const has4Plus = pocetExekuci === '4+';
-    const exception4Plus = duchodPovinny && (tretina < params.limit4PlusPension);
-    const apply4PlusRule = has4Plus && !exception4Plus;
-
-    const isPriority = typ === 'prednostni' || typ === 'vyzivne' || mode === 'insolvence';
-    const forceTwoThirds = isPriority || apply4PlusRule;
-    
-    let srazka = forceTwoThirds ? ((2 * tretina) + plneZabavitelnaCast) : (tretina + plneZabavitelnaCast);
-
-    let nahradaPlatci = 0;
-    if (mode === 'exekuce' && uplatnitPausal && srazka > 0) {
-        nahradaPlatci = Math.min(params.pausalniNahradaPlatce, Math.ceil(srazka / 3));
-    }
-
-    let maxPrednostniFond = 0;
-    if (typ === 'vyzivne') {
-        maxPrednostniFond = tretina + plneZabavitelnaCast; 
-    }
-
-    return {
-      srazka,
-      srazkaCista: srazka - nahradaPlatci,
-      nahradaPlatci,
-      kVyplateZeSrazek: prijem - srazka,
-      kVyplate: (prijem - srazka) + chranenyPrijem, 
-      chranenyPrijem,
-      legalniMinimum: legalniNezabavitelnaCastka,
-      tretina,
-      plneZabavitelna: plneZabavitelnaCast,
-      zbytekKDeleni: castDoLimitu,
-      zaokrouhlovaciZbytek,
-      forceTwoThirds,
-      exception4PlusApplied: has4Plus && exception4Plus,
-      maxPrednostniFond,
-      partnerZapocitan: zapocitatPartnera,
-      hranicePlneZabavitelna,
-      zbytekMzdyRaw: zbytekMzdy,
-      prijemPredSrazkou: prijem,
-      zakladNaPovinneho,
-      jednaCtvrtina,
-      pocetVsechOsob,
-      vykonProVyzivne,
-      pocetCtvrtin,
-      celkovaNezabavitelnaRaw
-    };
+  const commitDluhyNezajistene = () => {
+    const parsed = Number(dluhyNezajisteneDraft);
+    const normalized = Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
+    setData(prev => ({ ...prev, dluhyNezajistene: normalized }));
+    setDluhyNezajisteneDraft(String(normalized));
+    setEditingDluhyNezajistene(false);
   };
+
+  // --- JÁDRO VÝPOČTU ---
+  // Jediný výpočet srážky je sdílen i s modulem Příjmový potenciál.
+  const calculateResult = (input) => calculateWageDeduction(input, params);
 
   const results = useMemo(() => {
     const totalPrijem1 = data.prijemMzda1 + data.prijemDuchod1 + data.prijemDalsi1;
     const totalPrijem2 = data.prijemMzda2 + data.prijemDuchod2 + data.prijemDalsi2;
 
-    const pocetVyzD1 = data.spolecneDeti + data.vyzivovaneOsoby1;
+    const spolecneDetiD1 = activeTab === 'manzele' ? data.spolecneDeti : 0;
+    const pocetVyzD1 = spolecneDetiD1 + data.vyzivovaneOsoby1;
 
     // --- List 1: Exekuce (Jednotlivec 1) ---
     const ex = calculateResult({
@@ -278,9 +191,19 @@ const App = () => {
     
     const proVeriteleJ = Math.max(0, insJ.srazka - params.odmenaSpravceJednotlivec - data.bezneMesicniVyzivne1);
     const celkemProVeriteleJ = (proVeriteleJ * data.delkaOddluzeni) + data.vytezekZpenezeni;
-    const uspokojeniJ = data.dluhyNezajistene > 0 ? Math.min(100, (celkemProVeriteleJ / data.dluhyNezajistene) * 100) : 0;
+    const uspokojeniInfoJ = calculateCreditorSatisfaction({
+      availableForCreditors: celkemProVeriteleJ,
+      unsecuredDebt: data.dluhyNezajistene,
+    });
+    const uspokojeniJ = uspokojeniInfoJ.percentage;
     
-    const rizikoNepovoleniJ = insJ.srazka < params.minSplatkaJednotlivec || proVeriteleJ <= 0;
+    const minimalniNutnaSrazkaJ = getMinimumInsolvencyPayment({
+      administratorFee: params.odmenaSpravceJednotlivec,
+      ordinaryAlimony: data.bezneMesicniVyzivne1,
+      configuredMinimum: params.minSplatkaJednotlivec,
+    });
+    const minimalneProVeriteleJ = params.odmenaSpravceJednotlivec;
+    const rizikoNepovoleniJ = insJ.srazka < minimalniNutnaSrazkaJ || proVeriteleJ < minimalneProVeriteleJ;
 
     // --- List 3: Insolvence Manželé ---
     const insM_A = calculateResult({
@@ -315,12 +238,23 @@ const App = () => {
     const kVyplateCelkemM = insM_A.kVyplate + insM_B.kVyplate;
     const proVeriteleM = Math.max(0, srazkaCelkemM - params.odmenaSpravceManzele - data.bezneMesicniVyzivne1 - data.bezneMesicniVyzivne2);
     const celkemProVeriteleM = (proVeriteleM * data.delkaOddluzeni) + data.vytezekZpenezeni;
-    const uspokojeniM = data.dluhyNezajistene > 0 ? Math.min(100, (celkemProVeriteleM / data.dluhyNezajistene) * 100) : 0;
-    const rizikoNepovoleniM = srazkaCelkemM < params.minSplatkaManzele || proVeriteleM <= 0;
+    const uspokojeniInfoM = calculateCreditorSatisfaction({
+      availableForCreditors: celkemProVeriteleM,
+      unsecuredDebt: data.dluhyNezajistene,
+    });
+    const uspokojeniM = uspokojeniInfoM.percentage;
+    const bezneVyzivneM = data.bezneMesicniVyzivne1 + data.bezneMesicniVyzivne2;
+    const minimalniNutnaSrazkaM = getMinimumInsolvencyPayment({
+      administratorFee: params.odmenaSpravceManzele,
+      ordinaryAlimony: bezneVyzivneM,
+      configuredMinimum: params.minSplatkaManzele,
+    });
+    const minimalneProVeriteleM = params.odmenaSpravceManzele;
+    const rizikoNepovoleniM = srazkaCelkemM < minimalniNutnaSrazkaM || proVeriteleM < minimalneProVeriteleM;
 
     return { 
-      ex, insJ, proVeriteleJ, uspokojeniJ, rizikoNepovoleniJ, totalPrijem1, celkemProVeriteleJ,
-      insM_A, insM_B, srazkaCelkemM, kVyplateCelkemM, proVeriteleM, uspokojeniM, rizikoNepovoleniM, totalPrijem2, celkemProVeriteleM 
+      ex, insJ, proVeriteleJ, uspokojeniJ, uspokojeniInfoJ, rizikoNepovoleniJ, minimalniNutnaSrazkaJ, minimalneProVeriteleJ, totalPrijem1, celkemProVeriteleJ,
+      insM_A, insM_B, srazkaCelkemM, kVyplateCelkemM, proVeriteleM, uspokojeniM, uspokojeniInfoM, rizikoNepovoleniM, minimalniNutnaSrazkaM, minimalneProVeriteleM, totalPrijem2, celkemProVeriteleM 
     };
   }, [data, params, activeTab]);
 
@@ -418,6 +352,7 @@ const App = () => {
             <aside className="lg:col-span-5 space-y-4 print:hidden">
               
               {/* SEKCE 1: RODINA (SPOLEČNÉ ÚDAJE) */}
+              {activeTab === 'manzele' && (
               <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 space-y-3 border-t-4 border-t-indigo-400">
                 <h3 className="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-1 flex items-center gap-2">
                   <Users size={14}/> {activeTab === 'manzele' ? 'Společná situace rodiny' : 'Rodinná situace'}
@@ -441,6 +376,7 @@ const App = () => {
                   </div>
                 </div>
               </div>
+              )}
 
               {/* SEKCE 2: DLUŽNÍK 1 */}
               <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 space-y-3 border-t-4 border-t-blue-400">
@@ -485,7 +421,7 @@ const App = () => {
                     <Tooltip text="Pokud na některou z osob (např. dítě) aktuálně probíhá exekuce pro výživné, tato osoba se vám do nezabavitelného minima nezapočítává. Zadejte jejich počet.">
                        <label className="block text-[10px] font-bold text-amber-700 mb-1 w-fit cursor-help border-b border-dotted border-amber-600">Z toho s výkonem výž.</label>
                     </Tooltip>
-                    <input type="number" name="osobySVykonemProVyzivne1" value={data.osobySVykonemProVyzivne1} onChange={handleInputChange} max={data.spolecneDeti + data.vyzivovaneOsoby1 + (data.maManzelaPartnera1 ? 1 : 0)} className="w-full p-2 bg-amber-50 border border-amber-200 rounded-lg font-bold text-amber-900 text-sm" />
+                    <input type="number" name="osobySVykonemProVyzivne1" value={data.osobySVykonemProVyzivne1} onChange={handleInputChange} max={(activeTab === 'manzele' ? data.spolecneDeti : 0) + data.vyzivovaneOsoby1 + (data.maManzelaPartnera1 ? 1 : 0)} className="w-full p-2 bg-amber-50 border border-amber-200 rounded-lg font-bold text-amber-900 text-sm" />
                   </div>
                 </div>
 
@@ -647,18 +583,28 @@ const App = () => {
                     <Tooltip text="Součet všech vašich běžných dluhů (spotřebitelské úvěry, kreditní karty, nezaplacené faktury), u kterých věřitelé nemají žádnou zástavu. Právě z této částky se na konci počítá, na kolik procent jste dluhy umořili.">
                       <label className="block text-[10px] font-bold text-indigo-700 mb-1 w-fit cursor-help border-b border-dotted border-indigo-400">Nezajištěné dluhy (Základ pro výpočet)</label>
                     </Tooltip>
-                    <input type="number" name="dluhyNezajistene" value={data.dluhyNezajistene} onChange={handleInputChange} className="w-full p-2 bg-indigo-50 border border-indigo-200 rounded-lg font-bold text-indigo-900 text-sm" />
+                    <input
+                      type="number"
+                      name="dluhyNezajistene"
+                      min="0"
+                      value={dluhyNezajisteneDraft}
+                      onFocus={() => setEditingDluhyNezajistene(true)}
+                      onChange={(e) => setDluhyNezajisteneDraft(e.target.value)}
+                      onBlur={commitDluhyNezajistene}
+                      onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+                      className="w-full p-2 bg-indigo-50 border border-indigo-200 rounded-lg font-bold text-indigo-900 text-sm"
+                    />
                   </div>
                   
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <Tooltip text="Zde zadejte hypotéky, úvěry se zástavou nemovitosti nebo leasingy aut. Tyto dluhy se neplatí z měsíčních srážek ze mzdy, ale uspokojují se primárně z prodeje dané zástavy (např. prodeje bytu).">
+                      <Tooltip text="Zde zadejte dluhy kryté zajištěním. Hodnota slouží v této verzi jako informativní údaj a nevstupuje do procenta modelového uspokojení nezajištěných věřitelů; zajištěné pohledávky se řeší zejména z výtěžku zajištění.">
                         <label className="block text-[10px] font-bold text-slate-600 mb-1 w-fit cursor-help border-b border-dotted border-slate-400">Zajištěné dluhy</label>
                       </Tooltip>
                       <input type="number" name="dluhyZajistene" value={data.dluhyZajistene} onChange={handleInputChange} className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm" />
                     </div>
                     <div>
-                      <Tooltip text="Například dluhy z úmyslných trestných činů, peněžité tresty nebo náhrady úmyslné škody. Na tyto dluhy se oddlužení nevztahuje – po skončení řízení vám je soud neodpustí a budete je muset doplatit.">
+                      <Tooltip text="Informativní údaj o pohledávkách, které mohou zůstat po osvobození nedotčeny. V této verzi nevstupuje do procenta modelového uspokojení nezajištěných věřitelů; konkrétní právní režim je nutné posoudit podle druhu pohledávky.">
                         <label className="block text-[10px] font-bold text-slate-600 mb-1 w-fit cursor-help border-b border-dotted border-slate-400">Neosvoboditelné dluhy</label>
                       </Tooltip>
                       <input type="number" name="dluhyNeosvoboditelne" value={data.dluhyNeosvoboditelne} onChange={handleInputChange} className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm" />
@@ -713,13 +659,13 @@ const App = () => {
                     <div className="pt-2 border-t border-slate-100 mt-4 space-y-3">
                       <div>
                         <Tooltip text="Interní orientační práh kalkulačky pro posouzení, zda srážka není zjevně příliš nízká. (Cca 2 200 Kč měsíčně podle veřejné nápovědy justice.cz).">
-                          <label className="block text-xs font-bold text-slate-600 mb-1 w-full text-left cursor-help border-b border-dotted border-slate-400">Minimální splátka v oddlužení (Jednotlivec)</label>
+                          <label className="block text-xs font-bold text-slate-600 mb-1 w-full text-left cursor-help border-b border-dotted border-slate-400">Základní minimum oddlužení bez výživného (Jednotlivec)</label>
                         </Tooltip>
                         <input type="number" value={params.minSplatkaJednotlivec ?? 2178} onChange={(e) => setParams({...params, minSplatkaJednotlivec: parseFloat(e.target.value) || 0})} className="w-full p-2 border border-red-200 bg-red-50 rounded font-bold" />
                       </div>
                       <div>
-                        <Tooltip text="Interní orientační práh kalkulačky pro posouzení, zda srážka u manželů není zjevně příliš nízká.">
-                          <label className="block text-xs font-bold text-slate-600 mb-1 w-full text-left cursor-help border-b border-dotted border-slate-400">Minimální splátka v oddlužení (Manželé)</label>
+                        <Tooltip text="Základní orientační minimum bez běžného výživného. Kalkulačka ho dále porovná s pravidlem 1 + 1 (2× odměna správce manželů) a přičte zadané běžné výživné.">
+                          <label className="block text-xs font-bold text-slate-600 mb-1 w-full text-left cursor-help border-b border-dotted border-slate-400">Základní minimum oddlužení bez výživného (Manželé)</label>
                         </Tooltip>
                         <input type="number" value={params.minSplatkaManzele ?? 3267} onChange={(e) => setParams({...params, minSplatkaManzele: parseFloat(e.target.value) || 0})} className="w-full p-2 border border-red-200 bg-red-50 rounded font-bold" />
                       </div>
@@ -771,8 +717,8 @@ const App = () => {
 
                   <AnalyticCard 
                     title="Zákonná srážka" 
-                    titleTooltip="Částka, kterou vám zaměstnavatel ze zákona srazí. U nepřednostních dluhů tvoří jednu třetinu zbytku mzdy, u přednostních dluhů (nebo při nejméně 4 exekucích za splnění zákonných podmínek) tvoří dvě třetiny. Část srážky může být předtím použita na paušální náhradu plátci mzdy."
-                    value={results.ex.srazkaCista} 
+                    titleTooltip="Celková částka sražená z příjmu. Paušální náhrada plátci mzdy se neodečítá navíc z čisté mzdy; je uspokojena z této již sražené částky a zbytek srážky se odvádí na exekuci."
+                    value={results.ex.srazka} 
                     color="red" 
                     subtitle={results.ex.forceTwoThirds ? "Uplatněna srážka ze DVOU třetin zbytku." : "Uplatněna srážka z JEDNÉ třetiny zbytku."}
                   >
@@ -782,6 +728,14 @@ const App = () => {
                       </Tooltip>
                       <strong>{results.ex.nahradaPlatci} Kč</strong>
                     </div>
+                    {results.ex.nahradaPlatci > 0 && (
+                      <div className="flex justify-between items-center text-xs text-red-800 mt-1 border-t border-red-100 pt-1">
+                        <Tooltip text="Část celkové zákonné srážky, která po odečtení paušální náhrady plátci mzdy pokračuje do exekučního rozvrhu.">
+                          <span className="cursor-help border-b border-dotted border-red-400">K exekučnímu rozvrhu</span>
+                        </Tooltip>
+                        <strong>{results.ex.srazkaCista.toLocaleString()} Kč</strong>
+                      </div>
+                    )}
                     {results.ex.exception4PlusApplied && (
                        <div className="mt-2 p-2 bg-red-100 rounded text-[10px] text-red-800 font-bold leading-tight print:border print:border-red-300">
                          Výjimka: Dlužník pobírá důchod a třetina je pod fixním limitem ({params.limit4PlusPension} Kč). Sráží se jen z 1/3 zbytku bez ohledu na 4+ exekucí.
@@ -803,7 +757,7 @@ const App = () => {
                        <p className="text-[8px] text-slate-400 mt-1">Započítán partner: {results.ex.partnerZapocitan ? 'ANO' : 'NE'}</p>
                      </div>
                      <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
-                       <Tooltip text="Čistý příjem po odečtení nezabavitelného základu. Pokud je tento zbytek obrovský, dělí se na třetiny maximálně do částky stanoveného limitu.">
+                       <Tooltip text="Část zbytku mzdy určená k dělení na třetiny po omezení zákonným limitem a po snížení na nejbližší nižší násobek tří. Případný zbytek 1–2 Kč zůstává dlužníkovi.">
                          <p className="text-[9px] text-slate-500 uppercase font-bold mb-1 cursor-help border-b border-dotted border-slate-400 w-fit">Zbytek k dělení</p>
                        </Tooltip>
                        <p className="font-black text-slate-800 text-lg">{results.ex.zbytekKDeleni.toLocaleString()}</p>
@@ -840,7 +794,7 @@ const App = () => {
                       <p>2. <strong className="text-slate-700">Zbytek mzdy:</strong> {results.ex.prijemPredSrazkou.toLocaleString()} (Příjem) - {results.ex.legalniMinimum.toLocaleString()} (Nezab. částka) = {Math.max(0, results.ex.zbytekMzdyRaw).toLocaleString()} Kč</p>
                       {results.ex.zbytekMzdyRaw > 0 && (
                         <>
-                          <p>3. <strong className="text-slate-700">Hodnota 1/3:</strong> {results.ex.zbytekKDeleni.toLocaleString()} (Část do limitu) ÷ 3 = {results.ex.tretina.toLocaleString()} Kč (zbytek {results.ex.zaokrouhlovaciZbytek} Kč dlužníkovi)</p>
+                          <p>3. <strong className="text-slate-700">Hodnota 1/3:</strong> {results.ex.zbytekKDeleni.toLocaleString()} (část po snížení na násobek 3) ÷ 3 = {results.ex.tretina.toLocaleString()} Kč (zaokrouhlovací zbytek {results.ex.zaokrouhlovaciZbytek} Kč dlužníkovi)</p>
                           <p>4. <strong className="text-slate-700">Srážka:</strong> {results.ex.forceTwoThirds ? '2' : '1'} × {results.ex.tretina.toLocaleString()} ({results.ex.forceTwoThirds ? 'Přednostní' : 'Nepřednostní'}) + {results.ex.plneZabavitelna.toLocaleString()} (Nad limit) = {results.ex.srazka.toLocaleString()} Kč</p>
                           <p>5. <strong className="text-slate-700">K výplatě:</strong> {results.ex.prijemPredSrazkou.toLocaleString()} (Příjem) - {results.ex.srazka.toLocaleString()} (Srážka){data.chranenePrijmy1 > 0 ? ` + ${data.chranenePrijmy1.toLocaleString()} (Chráněné dávky)` : ''} = {results.ex.kVyplate.toLocaleString()} Kč</p>
                         </>
@@ -863,7 +817,7 @@ const App = () => {
                     <div>
                       <p className="text-xs font-bold text-red-900 uppercase">Riziko nepovolení oddlužení</p>
                       <p className="text-[11px] text-red-800 mt-1">
-                        Vypočtená měsíční srážka nedosahuje nastaveného orientačního minima (<strong>{params.minSplatkaJednotlivec.toLocaleString()} Kč</strong> měsíčně), nebo po odečtení odměny správce a běžného výživného <strong>nezbývá nic pro nezajištěné věřitele</strong>. K povolení oddlužení soudem bude pravděpodobně nutné doložit dodatečný příjem (např. darovací smlouvou nebo smlouvou o důchodu).
+                        Při zadaných údajích nevychází orientační pravidlo „1 + 1“. Po úhradě správce a běžného výživného musí zbýt ostatním věřitelům alespoň částka odpovídající odměně a hotovým výdajům správce. Pro tento případ vychází potřebná měsíční srážka alespoň <strong>{results.minimalniNutnaSrazkaJ.toLocaleString()} Kč</strong> a pro ostatní věřitele alespoň <strong>{results.minimalneProVeriteleJ.toLocaleString()} Kč</strong>. Výsledek je pouze orientační a nezahrnuje všechny další prioritní pohledávky.
                       </p>
                     </div>
                   </div>
@@ -917,7 +871,7 @@ const App = () => {
                      <p>2. <strong className="text-slate-700">Zbytek mzdy:</strong> {results.insJ.prijemPredSrazkou.toLocaleString()} (Příjem) - {results.insJ.legalniMinimum.toLocaleString()} (Nezab. částka) = {Math.max(0, results.insJ.zbytekMzdyRaw).toLocaleString()} Kč</p>
                      {results.insJ.zbytekMzdyRaw > 0 && (
                        <>
-                         <p>3. <strong className="text-slate-700">Hodnota 1/3:</strong> {results.insJ.zbytekKDeleni.toLocaleString()} (Část do limitu) ÷ 3 = {results.insJ.tretina.toLocaleString()} Kč</p>
+                         <p>3. <strong className="text-slate-700">Hodnota 1/3:</strong> {results.insJ.zbytekKDeleni.toLocaleString()} (část po snížení na násobek 3) ÷ 3 = {results.insJ.tretina.toLocaleString()} Kč (zaokrouhlovací zbytek {results.insJ.zaokrouhlovaciZbytek} Kč dlužníkovi)</p>
                          <p>4. <strong className="text-slate-700">Srážka:</strong> 2 × {results.insJ.tretina.toLocaleString()} (Oddlužení bere 2/3) + {results.insJ.plneZabavitelna.toLocaleString()} (Nad limit) = {results.insJ.srazka.toLocaleString()} Kč</p>
                          <p>5. <strong className="text-slate-700">K výplatě:</strong> {results.insJ.prijemPredSrazkou.toLocaleString()} (Příjem) - {results.insJ.srazka.toLocaleString()} (Srážka){data.chranenePrijmy1 > 0 ? ` + ${data.chranenePrijmy1.toLocaleString()} (Chráněné dávky)` : ''} = {results.insJ.kVyplate.toLocaleString()} Kč</p>
                        </>
@@ -933,10 +887,12 @@ const App = () => {
                      </div>
                      <div>
                        <div className="text-4xl font-black text-white tracking-tighter mb-1 print:text-black">
-                         {Number.isFinite(results.uspokojeniJ) ? results.uspokojeniJ.toFixed(1) : 0} %
+                         {editingDluhyNezajistene ? '—' : `${Number.isFinite(results.uspokojeniJ) ? results.uspokojeniJ.toFixed(1) : 0} %`}
                        </div>
                        <div className="text-[10px] text-slate-400 border-t border-slate-700 pt-2 print:border-gray-200 print:text-gray-600">
-                         Odpovídá úhradě {Math.round(results.celkemProVeriteleJ).toLocaleString()} Kč ze základu {data.dluhyNezajistene.toLocaleString()} Kč.
+                         {editingDluhyNezajistene
+                           ? 'Výsledek se přepočítá po potvrzení částky nezajištěných dluhů.'
+                           : <>Odpovídá modelové úhradě {Math.round(results.uspokojeniInfoJ.actualPayment).toLocaleString()} Kč ze základu {data.dluhyNezajistene.toLocaleString()} Kč.{results.uspokojeniInfoJ.excessPotential > 0 ? ` Disponibilní plnění je o ${Math.round(results.uspokojeniInfoJ.excessPotential).toLocaleString()} Kč vyšší než zadaný dluh.` : ''}</>}
                        </div>
                      </div>
                    </div>
@@ -967,7 +923,7 @@ const App = () => {
                     <div>
                       <p className="text-xs font-bold text-red-900 uppercase">Riziko nepovolení oddlužení</p>
                       <p className="text-[11px] text-red-800 mt-1">
-                        Společná měsíční srážka obou manželů nedosahuje nastaveného orientačního minima pro manžele (<strong>{params.minSplatkaManzele.toLocaleString()} Kč</strong>), nebo po odečtení odměny správce a běžného výživného <strong>nezbývá z celkové srážky nic pro nezajištěné věřitele</strong>. K povolení oddlužení soudem bude pravděpodobně nutné doložit dodatečný příjem.
+                        Při zadaných údajích nevychází orientační pravidlo „1 + 1“ pro společné oddlužení. Po úhradě správce a běžného výživného musí zbýt ostatním věřitelům alespoň částka odpovídající odměně a hotovým výdajům správce. Pro tento případ vychází potřebná společná měsíční srážka alespoň <strong>{results.minimalniNutnaSrazkaM.toLocaleString()} Kč</strong> a pro ostatní věřitele alespoň <strong>{results.minimalneProVeriteleM.toLocaleString()} Kč</strong>. Výsledek je pouze orientační.
                       </p>
                     </div>
                   </div>
@@ -1029,10 +985,12 @@ const App = () => {
                      </div>
                      <div>
                        <div className="text-4xl font-black text-white tracking-tighter mb-1 print:text-black">
-                         {Number.isFinite(results.uspokojeniM) ? results.uspokojeniM.toFixed(1) : 0} %
+                         {editingDluhyNezajistene ? '—' : `${Number.isFinite(results.uspokojeniM) ? results.uspokojeniM.toFixed(1) : 0} %`}
                        </div>
                        <div className="text-[10px] text-slate-400 border-t border-slate-700 pt-2 print:border-gray-200 print:text-gray-600">
-                         Odpovídá úhradě {Math.round(results.celkemProVeriteleM).toLocaleString()} Kč ze základu {data.dluhyNezajistene.toLocaleString()} Kč.
+                         {editingDluhyNezajistene
+                           ? 'Výsledek se přepočítá po potvrzení částky nezajištěných dluhů.'
+                           : <>Odpovídá modelové úhradě {Math.round(results.uspokojeniInfoM.actualPayment).toLocaleString()} Kč ze základu {data.dluhyNezajistene.toLocaleString()} Kč.{results.uspokojeniInfoM.excessPotential > 0 ? ` Disponibilní plnění je o ${Math.round(results.uspokojeniInfoM.excessPotential).toLocaleString()} Kč vyšší než zadaný dluh.` : ''}</>}
                        </div>
                      </div>
                    </div>
@@ -1059,4 +1017,4 @@ const App = () => {
   );
 };
 
-export default App;
+export default HlavniKalkulackaPage

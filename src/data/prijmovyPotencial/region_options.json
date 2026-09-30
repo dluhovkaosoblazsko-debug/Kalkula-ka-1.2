@@ -1,0 +1,58 @@
+[
+  {
+    "label": "1. Hlavní město Praha",
+    "category": 1
+  },
+  {
+    "label": "3. Jihočeský kraj",
+    "category": 3
+  },
+  {
+    "label": "3. Jihomoravský kraj",
+    "category": 3
+  },
+  {
+    "label": "3. Karlovarský kraj",
+    "category": 3
+  },
+  {
+    "label": "3. Kraj Vysočina",
+    "category": 3
+  },
+  {
+    "label": "2. Královéhradecký kraj",
+    "category": 2
+  },
+  {
+    "label": "3. Liberecký kraj",
+    "category": 3
+  },
+  {
+    "label": "3. Moravskoslezský kraj",
+    "category": 3
+  },
+  {
+    "label": "3. Olomoucký kraj",
+    "category": 3
+  },
+  {
+    "label": "3. Pardubický kraj",
+    "category": 3
+  },
+  {
+    "label": "2. Plzeňský kraj",
+    "category": 2
+  },
+  {
+    "label": "2. Středočeský kraj",
+    "category": 2
+  },
+  {
+    "label": "3. Ústecký kraj",
+    "category": 3
+  },
+  {
+    "label": "3. Zlínský kraj",
+    "category": 3
+  }
+]

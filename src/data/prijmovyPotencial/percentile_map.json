@@ -1,0 +1,114 @@
+[
+  {
+    "percentile": 5,
+    "column": 15
+  },
+  {
+    "percentile": 7.5,
+    "column": 16
+  },
+  {
+    "percentile": 10,
+    "column": 17
+  },
+  {
+    "percentile": 12.5,
+    "column": 18
+  },
+  {
+    "percentile": 15,
+    "column": 19
+  },
+  {
+    "percentile": 17.5,
+    "column": 20
+  },
+  {
+    "percentile": 20,
+    "column": 21
+  },
+  {
+    "percentile": 22.5,
+    "column": 22
+  },
+  {
+    "percentile": 25,
+    "column": 23
+  },
+  {
+    "percentile": 27.5,
+    "column": 24
+  },
+  {
+    "percentile": 30,
+    "column": 25
+  },
+  {
+    "percentile": 32.5,
+    "column": 26
+  },
+  {
+    "percentile": 35,
+    "column": 27
+  },
+  {
+    "percentile": 37.5,
+    "column": 28
+  },
+  {
+    "percentile": 40,
+    "column": 29
+  },
+  {
+    "percentile": 42.5,
+    "column": 30
+  },
+  {
+    "percentile": 45,
+    "column": 31
+  },
+  {
+    "percentile": 47.5,
+    "column": 32
+  },
+  {
+    "percentile": 50,
+    "column": 33
+  },
+  {
+    "percentile": 55,
+    "column": 34
+  },
+  {
+    "percentile": 60,
+    "column": 35
+  },
+  {
+    "percentile": 65,
+    "column": 36
+  },
+  {
+    "percentile": 70,
+    "column": 37
+  },
+  {
+    "percentile": 75,
+    "column": 38
+  },
+  {
+    "percentile": 80,
+    "column": 39
+  },
+  {
+    "percentile": 85,
+    "column": 40
+  },
+  {
+    "percentile": 90,
+    "column": 41
+  },
+  {
+    "percentile": 95,
+    "column": 42
+  }
+]

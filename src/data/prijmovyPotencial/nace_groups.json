@@ -1,0 +1,52 @@
+[
+  {
+    "grouped": "Celkem",
+    "sections": "Celkem",
+    "category": 1
+  },
+  {
+    "grouped": "Zemědělství a průmysl",
+    "sections": "A, B, D, E, F",
+    "category": 2
+  },
+  {
+    "grouped": "Zpracovatelský průmysl",
+    "sections": "C",
+    "category": 3
+  },
+  {
+    "grouped": "Obchod a doprava",
+    "sections": "G, H",
+    "category": 4
+  },
+  {
+    "grouped": "Služby v oblasti ubytování a stravování, nemovitosti a administrativy",
+    "sections": "I, L, N, S",
+    "category": 5
+  },
+  {
+    "grouped": "Peněnictví a IT",
+    "sections": "J, K",
+    "category": 6
+  },
+  {
+    "grouped": "Veřejná správa, obrana, sociální zabezpečení",
+    "sections": "O",
+    "category": 7
+  },
+  {
+    "grouped": "Školství a kultura",
+    "sections": "M, P, R",
+    "category": 8
+  },
+  {
+    "grouped": "Zdravotnictví",
+    "sections": "Q86",
+    "category": 9
+  },
+  {
+    "grouped": "Sociální služby",
+    "sections": "Q87 a Q88",
+    "category": 10
+  }
+]
