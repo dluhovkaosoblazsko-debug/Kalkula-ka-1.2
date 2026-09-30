@@ -721,8 +721,8 @@ const HlavniKalkulackaPage = () => {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <Tooltip text={activeTab === 'manzele'
-                      ? 'Společné děti, ke kterým máte vyživovací povinnost vy i manžel/ka. V oddlužení manželů se započítají do nezabavitelné částky oběma dlužníkům.'
-                      : 'Děti, ke kterým máte vy i druhý rodič společnou vyživovací povinnost. V režimu jednotlivce se započtou do vaší nezabavitelné částky stejně jako jiné vyživované děti.'}>
+                      ? 'Právně přesně: Společně vyživované dítě se při srážkách z příjmu obou manželů započítává do nezabavitelné částky každému z nich zvlášť.\n\nLidsky řečeno: Pokud společně živíte dvě děti a srážky se počítají oběma manželům, obě děti zvýší nezabavitelnou částku manželovi A i manželovi B. Každému tak zůstane o něco více a jeho srážka bude nižší.'
+                      : 'Právně přesně: Společně vyživované dítě se u jednotlivce započítá jako vyživovaná osoba, pokud jsou splněny zákonné podmínky.\n\nLidsky řečeno: Dítě, které jste povinni živit, zvyšuje částku, kterou vám zákon chrání před srážkou. Čím více započitatelných dětí, tím nižší bývá srážka.'}>
                       <label className="block text-[10px] font-bold text-slate-600 mb-1 w-fit cursor-help border-b border-dotted border-slate-400">
                         {activeTab === 'manzele' ? 'Společné děti' : 'Společné děti / děti ve společné péči'}
                       </label>
@@ -1083,7 +1083,8 @@ const HlavniKalkulackaPage = () => {
                     )}
                     {results.ex.exception4PlusApplied && (
                        <div className="mt-2 p-2 bg-red-100 rounded text-[10px] text-red-800 font-bold leading-tight print:border print:border-red-300">
-                         Výjimka pro 4+ exekucí: dlužník má relevantní důchod a jedna třetina je pod zákonným limitem ({params.odmenaSpravceJednotlivec} Kč). Samotné pravidlo 4+ proto nezpůsobí připočtení druhé třetiny; případné přednostní pohledávky se posuzují samostatně.
+                         Výjimka pro 4+ exekucí: dlužník má rozhodný důchod a jedna třetina je pod zákonným limitem ({params.odmenaSpravceJednotlivec} Kč). Samotné pravidlo 4+ proto nezpůsobí připočtení druhé třetiny; případné přednostní pohledávky se posuzují samostatně.
+                         <span className="mt-1 block font-normal"><strong>Lidsky řečeno:</strong> Přestože jsou vedeny alespoň čtyři exekuce, v tomto konkrétním případě se jen kvůli jejich počtu srážka nezvýší na dvě třetiny. Pokud ale existuje přednostní dluh, například výživné, může se druhá třetina použít z tohoto důvodu.</span>
                        </div>
                     )}
                   </AnalyticCard>
