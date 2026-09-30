@@ -100,7 +100,7 @@ const IncomeSourcesEditor = ({ sources, multiplePayers, onSourcesChange, onMulti
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-3">
-        <Tooltip text="Zadejte každý postižitelný měsíční příjem samostatně. Typ důchodu kalkulačce zároveň umožní automaticky rozpoznat zvláštní důchodový režim pro 4+ exekucí a započtení manžela/partnera.">
+        <Tooltip text={"Právně přesně: Srážky se mohou provádět nejen ze mzdy, ale také z dalších zákonem určených příjmů, například z důchodu, DPP/DPČ, nemocenského, peněžité pomoci v mateřství nebo podpory v nezaměstnanosti. Každý zdroj příjmu zadejte samostatně; typ důchodu kalkulačka používá i pro zvláštní pravidla srážek.\n\nLidsky řečeno: Pokud máte třeba výplatu a k tomu důchod, nesčítejte je do jednoho čísla. Přidejte dva příjmy. Kalkulačka pak pozná, odkud peníze chodí a jaká pravidla na ně použít."}>
           <span className="text-[10px] font-bold text-slate-600 border-b border-dotted border-slate-400">{label}</span>
         </Tooltip>
         <button type="button" onClick={addSource} className="text-[10px] font-bold text-blue-700 hover:text-blue-900">+ Přidat další příjem</button>
@@ -109,20 +109,24 @@ const IncomeSourcesEditor = ({ sources, multiplePayers, onSourcesChange, onMulti
         <div key={source.id} className="rounded-lg border border-slate-200 bg-slate-50 p-2.5">
           <div className="grid gap-2 sm:grid-cols-[1.4fr_1fr_auto] items-end">
             <div>
-              <label className="block text-[9px] font-bold text-slate-500 mb-1">Typ příjmu</label>
+              <Tooltip text={"Právně přesně: Typ příjmu určuje, zda se na něj použijí pravidla srážek ze mzdy a zda má některé další právní důsledky, například u vybraných důchodů.\n\nLidsky řečeno: Vyberte, odkud vám peníze chodí – například mzda, důchod nebo nemocenské. Není to jen popisek; podle této volby kalkulačka pozná, jak s příjmem pracovat."}>
+                <label className="block text-[9px] font-bold text-slate-500 mb-1 w-fit cursor-help border-b border-dotted border-slate-400">Typ příjmu</label>
+              </Tooltip>
               <select value={source.typ} onChange={(e) => updateSource(source.id, { typ: e.target.value })} className="w-full p-2 bg-white border border-slate-300 rounded-lg font-semibold text-xs">
                 {INCOME_TYPES.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-[9px] font-bold text-slate-500 mb-1">Čistá měsíční částka</label>
+              <Tooltip text={"Právně přesně: Zadejte čistou měsíční částku před provedením exekuční nebo insolvenční srážky. U mzdy jde o částku po odečtení daně a povinného pojistného; u důchodu nebo jiné dávky o měsíční částku před srážkou.\n\nLidsky řečeno: Zadejte částku, kterou byste za měsíc dostali na účet nebo v hotovosti, kdyby vám z ní ještě nebyla provedena exekuční či insolvenční srážka."}>
+                <label className="block text-[9px] font-bold text-slate-500 mb-1 w-fit cursor-help border-b border-dotted border-slate-400">Čistá měsíční částka</label>
+              </Tooltip>
               <input type="number" min="0" value={source.castka ?? ''} onChange={(e) => updateSource(source.id, { castka: Math.max(0, Number(e.target.value) || 0) })} className="w-full p-2 bg-white border border-slate-300 rounded-lg font-bold text-sm" />
             </div>
             <button type="button" onClick={() => removeSource(source.id)} disabled={safeSources.length <= 1} className="px-2 py-2 text-[10px] font-bold text-slate-500 disabled:opacity-30 hover:text-red-600">Odebrat</button>
           </div>
           {multiplePayers && safeSources.length > 1 && (
             <div className="mt-2">
-              <Tooltip text="Při několika plátcích určuje soud nebo exekuční orgán jednotlivě, jakou část nezabavitelné částky nemá každý plátce srážet (§ 298 OSŘ). Pro přesný výpočet zadejte částku určenou tomuto plátci. Součet přidělených částí by měl odpovídat celkové nezabavitelné částce.">
+              <Tooltip text={"Právně přesně: Pokud srážky provádí několik plátců současně, určí se, jakou část nezabavitelné částky má každý z nich ponechat. Pro přesný výpočet zadejte částku přidělenou právě tomuto plátci; součet má odpovídat celkové nezabavitelné částce.\n\nLidsky řečeno: Když vám například zaměstnavatel vyplácí mzdu a ČSSZ důchod a oba z příjmu srážejí, nemůže každý z nich ponechat celou nezabavitelnou částku. Ta se mezi ně rozdělí. Sem napište, kolik má ponechat právě tento plátce."}>
                 <label className="block text-[9px] font-bold text-amber-700 mb-1 border-b border-dotted border-amber-500">Nezabavitelná částka přidělená tomuto plátci</label>
               </Tooltip>
               <input type="number" min="0" value={source.pridelenaNezabavitelna ?? ''} onChange={(e) => updateSource(source.id, { pridelenaNezabavitelna: e.target.value === '' ? '' : Math.max(0, Number(e.target.value) || 0) })} className="w-full p-2 bg-amber-50 border border-amber-200 rounded-lg font-bold text-sm text-amber-900" placeholder="Podle rozhodnutí / pokynu plátci" />
@@ -133,7 +137,10 @@ const IncomeSourcesEditor = ({ sources, multiplePayers, onSourcesChange, onMulti
       {safeSources.length > 1 && (
         <label className="flex items-start gap-2 rounded-lg border border-blue-100 bg-blue-50 p-2.5 text-[10px] text-blue-900">
           <input type="checkbox" checked={multiplePayers} onChange={(e) => onMultiplePayersChange(e.target.checked)} className="mt-0.5 accent-blue-600" />
-          <span><strong>Příjmy vyplácí více plátců.</strong> Zaškrtněte jen tehdy, když srážky provádí více samostatných plátců. Pak je pro přesný výpočet nutné zadat rozdělení nezabavitelné částky mezi plátce.</span>
+          <span>
+            <strong>Příjmy vyplácí více plátců.</strong> Zaškrtněte tehdy, když srážky současně provádí více samostatných plátců.
+            <span className="mt-1 block text-blue-700"><strong>Lidsky řečeno:</strong> Typicky například zaměstnavatel + ČSSZ. Kalkulačka pak potřebuje vědět, jak je mezi ně rozdělena nezabavitelná částka.</span>
+          </span>
         </label>
       )}
     </div>
@@ -752,7 +759,9 @@ const HlavniKalkulackaPage = () => {
 
                 <div className="grid grid-cols-2 gap-3 pt-2">
                   <div>
-                    <Tooltip text={activeTab === 'manzele' ? "Další osoby, kterým je tento dlužník povinen poskytovat výživné a které nejsou zahrnuty mezi společně vyživované děti." : "Zadejte počet dětí a dalších osob, ke kterým máte zákonnou vyživovací povinnost. Manžela/partnera sem nepočítejte, ten se zaškrtává zvlášť."}>
+                    <Tooltip text={activeTab === 'manzele'
+                      ? "Právně přesně: Uveďte další osoby, kterým je tento dlužník povinen poskytovat výživné a které nejsou zahrnuty mezi společně vyživované děti. Za každou započitatelnou osobu se zvyšuje nezabavitelná částka o jednu čtvrtinu základní nezabavitelné částky.\n\nLidsky řečeno: Sem přidejte další lidi, které tento manžel podle zákona živí. Každá započtená osoba znamená, že mu musí z příjmu zůstat více peněz a měsíční srážka bude nižší."
+                      : "Právně přesně: Uveďte osoby, kterým jste povinen/povinna poskytovat výživné. Za každou započitatelnou osobu se zvyšuje nezabavitelná částka o jednu čtvrtinu základní nezabavitelné částky. Manžela/partnera sem nepočítejte; ten má zvláštní pravidlo.\n\nLidsky řečeno: Typicky sem patří děti, které jste povinni živit. Čím více započitatelných vyživovaných osob máte, tím více peněz vám musí zůstat a tím menší bude srážka."}>
                       <label className="block text-[10px] font-bold text-slate-600 mb-1 w-fit cursor-help border-b border-dotted border-slate-400">
                         {activeTab === 'manzele' ? 'Další vyživované osoby tohoto dlužníka' : 'Vyživované osoby'}
                       </label>
@@ -760,7 +769,7 @@ const HlavniKalkulackaPage = () => {
                     <input type="number" name="vyzivovaneOsoby1" value={data.vyzivovaneOsoby1} onChange={handleInputChange} className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg font-bold text-sm" />
                   </div>
                   <div>
-                    <Tooltip text="Pokud na některou z osob (např. dítě) aktuálně probíhá exekuce pro výživné, tato osoba se vám do nezabavitelného minima nezapočítává. Zadejte jejich počet.">
+                    <Tooltip text={"Právně přesně: Jedna čtvrtina nezabavitelné částky se nezapočítá na osobu, v jejíž prospěch byl nařízen výkon rozhodnutí nebo exekuce pro výživné, pokud toto vymáhání stále trvá.\n\nLidsky řečeno: Pokud například dlužíte výživné na dítě a právě kvůli tomuto výživnému proti vám běží exekuce, toto dítě vám nezvýší nezabavitelnou částku. Sem zadejte počet takových osob."}>
                        <label className="block text-[10px] font-bold text-amber-700 mb-1 w-fit cursor-help border-b border-dotted border-amber-600">Z toho osoby s vymáhaným výživným</label>
                     </Tooltip>
                     <input type="number" name="osobySVykonemProVyzivne1" value={data.osobySVykonemProVyzivne1} onChange={handleInputChange} max={(activeTab === 'manzele' ? data.spolecneDeti : 0) + data.vyzivovaneOsoby1 + (results.insM_A?.partnerZapocitan || results.insJ?.partnerZapocitan ? 1 : 0)} className="w-full p-2 bg-amber-50 border border-amber-200 rounded-lg font-bold text-amber-900 text-sm" />
@@ -778,11 +787,11 @@ const HlavniKalkulackaPage = () => {
                         className="mt-0.5 accent-blue-600"
                       />
                       {results.duchodPovinny1 ? (
-                        <Tooltip text="Z typu vašeho příjmu kalkulačka poznala rozhodný důchod. Pokud máte manžela/manželku nebo partnera/partnerku, započte se na něj/ni jedna čtvrtina nezabavitelné částky.">
+                        <Tooltip text={"Právně přesně: Kalkulačka z vašich příjmů rozpoznala starobní důchod, invalidní důchod II. nebo III. stupně nebo sirotčí důchod. Pokud máte manžela/manželku nebo partnera/partnerku, započte se na něj/ni jedna čtvrtina nezabavitelné částky.\n\nLidsky řečeno: Protože rozhodný důchod pobíráte vy, stačí uvést, zda máte manžela nebo partnera. Pokud ano, zákon vám nechá o něco více peněz a srážka se sníží."}>
                           <span className="text-xs font-bold text-slate-700 cursor-help border-b border-dotted border-slate-400">Mám manžela/manželku nebo partnera/partnerku</span>
                         </Tooltip>
                       ) : (
-                        <Tooltip text="Zaškrtněte pouze tehdy, pokud máte manžela/manželku nebo partnera/partnerku, kterému/které byl přiznán starobní důchod, invalidní důchod II. nebo III. stupně nebo sirotčí důchod. V takovém případě se na něj/ni započte jedna čtvrtina nezabavitelné částky.">
+                        <Tooltip text={"Právně přesně: Pokud rozhodný důchod nepobíráte vy, započte se na manžela/partnera jedna čtvrtina nezabavitelné částky jen tehdy, pokud byl starobní důchod, invalidní důchod II. nebo III. stupně nebo sirotčí důchod přiznán jemu/jí.\n\nLidsky řečeno: Samotné manželství už dnes nestačí. Pokud ale takový důchod pobírá váš manžel nebo partner, zaškrtněte toto pole. Nezabavitelná částka se zvýší a měsíční srážka se sníží."}>
                           <span className="text-xs font-bold text-slate-700 cursor-help border-b border-dotted border-slate-400">Manžel/partner pobírá důchod rozhodný pro zvýšení nezabavitelné částky</span>
                         </Tooltip>
                       )}
@@ -791,21 +800,21 @@ const HlavniKalkulackaPage = () => {
                 )}
 
                 {results.duchodPovinny1 && (
-                  <div className="p-2.5 bg-blue-50 rounded-lg border border-blue-100 text-[10px] text-blue-800">
-                    Z typu zadaného příjmu byl automaticky rozpoznán starobní, invalidní důchod II./III. stupně nebo sirotčí důchod. Kalkulačka proto použije související zvláštní pravidla automaticky.
+                  <div className="p-2.5 bg-blue-50 rounded-lg border border-blue-100 text-[10px] text-blue-800 leading-relaxed">
+                    <strong>Rozpoznán rozhodný důchod.</strong> Kalkulačka automaticky zohlední zvláštní pravidla: tento důchod může za splnění dalších podmínek založit výjimku z režimu 4+ exekucí a při existenci manžela/partnera umožní započítat na něj/ni jednu čtvrtinu nezabavitelné částky.
                   </div>
                 )}
 
                 {activeTab !== 'nezabavitelna' && (
                   <div className="pt-2 border-t border-slate-100">
-                    <Tooltip text="Zadejte částku běžného měsíčního výživného, kterou máte platit. V insolvenci se tyto peníze srážejí z vašeho příjmu přednostně před ostatními věřiteli.">
+                    <Tooltip text={"Právně přesně: Uveďte běžné zákonné výživné, které máte během oddlužení pravidelně hradit. Tato pohledávka se hradí před nezajištěnými věřiteli a ovlivňuje i minimální částku potřebnou pro oddlužení.\n\nLidsky řečeno: Pokud každý měsíc platíte alimenty, zadejte je sem. Nejdřív se musí zaplatit výživné a až potom běžné dluhy, takže vyšší výživné znamená méně peněz pro ostatní věřitele a vyšší potřebné minimum."}>
                       <label className="block text-[10px] font-bold text-red-600 mb-1 w-fit cursor-help border-b border-dotted border-red-400">Běžné zákonné výživné hrazené během oddlužení</label>
                     </Tooltip>
                     <input type="number" name="bezneMesicniVyzivne1" value={data.bezneMesicniVyzivne1} onChange={handleInputChange} className="w-full p-2 bg-red-50 border border-red-200 rounded-lg outline-none font-bold text-red-800 text-sm" />
                   </div>
                 )}
                 <div className="pt-2 border-t border-slate-100">
-                  <Tooltip text="Uveďte pouze příjmy, o kterých víte, že z nich nelze provádět srážky ze mzdy a jiných příjmů. Důchod, nemocenské, peněžitá pomoc v mateřství, podpora v nezaměstnanosti, DPP/DPČ ani nejednorázové dávky státní sociální podpory sem obecně nepatří.">
+                  <Tooltip text={"Právně přesně: Uveďte pouze příjmy, z nichž se podle pravidel srážek ze mzdy a jiných příjmů srážka neprovádí. Důchod, nemocenské, peněžitá pomoc v mateřství, podpora v nezaměstnanosti, DPP/DPČ ani nejednorázové dávky státní sociální podpory sem obecně nepatří.\n\nLidsky řečeno: Sem nepište důchod nebo nemocenskou jen proto, že to není mzda. Patří sem jen peníze, o kterých víte, že z nich tuto srážku provést nelze. Pokud si nejste jistí, je bezpečnější nechat 0 a konkrétní příjem ověřit."}>
                     <label className="block text-[10px] font-bold text-green-700 mb-1 w-fit cursor-help border-b border-dotted border-green-500">Jiné příjmy nepodléhající srážkám</label>
                   </Tooltip>
                   <input type="number" name="chranenePrijmy1" value={data.chranenePrijmy1} onChange={handleInputChange} className="w-full p-2 bg-green-50 border border-green-200 rounded-lg outline-none font-bold text-green-900 text-sm" />
@@ -834,13 +843,13 @@ const HlavniKalkulackaPage = () => {
 
                   <div className="grid grid-cols-2 gap-3 pt-2">
                     <div>
-                      <Tooltip text="Další osoby, kterým je tento dlužník povinen poskytovat výživné a které nejsou zahrnuty mezi společně vyživované děti.">
+                      <Tooltip text={"Právně přesně: Uveďte další osoby, kterým je druhý dlužník povinen poskytovat výživné a které nejsou zahrnuty mezi společně vyživované děti. Za každou započitatelnou osobu se zvyšuje jeho nezabavitelná částka o jednu čtvrtinu základní nezabavitelné částky.\n\nLidsky řečeno: Sem přidejte další lidi, které druhý manžel podle zákona živí. Každá započtená osoba znamená, že mu zůstane více peněz a jeho srážka bude nižší."}>
                         <label className="block text-[10px] font-bold text-slate-600 mb-1 w-fit cursor-help border-b border-dotted border-slate-400">Další vyživované osoby tohoto dlužníka</label>
                       </Tooltip>
                       <input type="number" name="vyzivovaneOsoby2" value={data.vyzivovaneOsoby2} onChange={handleInputChange} className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg font-bold text-sm" />
                     </div>
                     <div>
-                      <Tooltip text="Počet vyživovaných osob druhého dlužníka, v jejichž prospěch je vedeno vymáhání výživného a tato okolnost brání jejich započtení do nezabavitelné částky.">
+                      <Tooltip text={"Právně přesně: Uveďte počet vyživovaných osob druhého dlužníka, v jejichž prospěch právě trvá výkon rozhodnutí nebo exekuce pro výživné. Na takovou osobu se jedna čtvrtina nezabavitelné částky nezapočítává.\n\nLidsky řečeno: Pokud druhý manžel dluží výživné například na dítě a kvůli tomuto výživnému proti němu běží exekuce, toto dítě mu nezvýší nezabavitelnou částku."}>
                         <label className="block text-[10px] font-bold text-amber-700 mb-1 w-fit cursor-help border-b border-dotted border-amber-600">Z toho osoby s vymáhaným výživným</label>
                       </Tooltip>
                       <input type="number" name="osobySVykonemProVyzivne2" value={data.osobySVykonemProVyzivne2} onChange={handleInputChange} max={data.spolecneDeti + data.vyzivovaneOsoby2 + (results.insM_B?.partnerZapocitan ? 1 : 0)} className="w-full p-2 bg-amber-50 border border-amber-200 rounded-lg font-bold text-amber-900 text-sm" />
@@ -848,19 +857,19 @@ const HlavniKalkulackaPage = () => {
                   </div>
 
                   {results.duchodPovinny2 && (
-                    <div className="p-2.5 bg-purple-50 rounded-lg border border-purple-100 text-[10px] text-purple-800">
-                      Z typu příjmu byl automaticky rozpoznán důchod relevantní pro zvláštní pravidla srážek.
+                    <div className="p-2.5 bg-purple-50 rounded-lg border border-purple-100 text-[10px] text-purple-800 leading-relaxed">
+                      <strong>Rozpoznán rozhodný důchod.</strong> Kalkulačka jej automaticky použije při posouzení zvláštních pravidel srážek a při započtení manžela/partnera do nezabavitelné částky.
                     </div>
                   )}
 
                   <div className="pt-2 border-t border-slate-100">
-                    <Tooltip text="Přednostně srážené výživné z platu druhého manžela.">
+                    <Tooltip text={"Právně přesně: Uveďte běžné zákonné výživné druhého manžela hrazené během oddlužení. Hradí se před nezajištěnými věřiteli a zvyšuje potřebné minimální měsíční plnění.\n\nLidsky řečeno: Pokud druhý manžel pravidelně platí alimenty, napište je sem. Tyto peníze musí jít na výživné dříve než na běžné dluhy."}>
                       <label className="block text-[10px] font-bold text-red-600 mb-1 w-fit cursor-help border-b border-dotted border-red-400">Běžné zákonné výživné hrazené během oddlužení (M2)</label>
                     </Tooltip>
                     <input type="number" name="bezneMesicniVyzivne2" value={data.bezneMesicniVyzivne2} onChange={handleInputChange} className="w-full p-2 bg-red-50 border border-red-200 rounded-lg outline-none font-bold text-red-800 text-sm" />
                   </div>
                   <div className="pt-2 border-t border-slate-100">
-                    <Tooltip text="Uveďte pouze příjmy, o kterých víte, že z nich nelze provádět srážky ze mzdy a jiných příjmů.">
+                    <Tooltip text={"Právně přesně: Uveďte pouze příjmy druhého manžela, z nichž se podle pravidel srážek ze mzdy a jiných příjmů srážka neprovádí. Kalkulačka právní povahu konkrétního příjmu sama neověřuje.\n\nLidsky řečeno: Sem patří jen peníze, o kterých víte, že z nich tuto srážku nelze provést. Důchod, nemocenské nebo podpora v nezaměstnanosti sem automaticky nepatří."}>
                       <label className="block text-[10px] font-bold text-green-700 mb-1 w-fit cursor-help border-b border-dotted border-green-500">Jiné příjmy nepodléhající srážkám</label>
                     </Tooltip>
                     <input type="number" min="0" name="chranenePrijmy2" value={data.chranenePrijmy2} onChange={handleInputChange} className="w-full p-2 bg-green-50 border border-green-200 rounded-lg outline-none font-bold text-green-900 text-sm" />
@@ -873,7 +882,7 @@ const HlavniKalkulackaPage = () => {
                 <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 space-y-4">
                   <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">Parametry exekuce</h3>
                   <div>
-                     <Tooltip text="Režim srážky ze dvou třetin se při 4+ exekucích uplatní jen tehdy, pokud jde současně o nejméně čtyři exekuce k vymožení splatných peněžitých pohledávek a plátci mzdy byl doručen exekuční příkaz nebo usnesení obsahující vyrozumění o exekuci srážkami.">
+                     <Tooltip text={"Právně přesně: Při nejméně čtyřech současně vedených výkonech rozhodnutí nebo exekucích k vymožení splatných peněžitých pohledávek se za zákonných podmínek srážejí dvě třetiny zbytku příjmu, i když jde jinak o nepřednostní dluh. Existuje zvláštní výjimka pro některé důchodce s nízkou jednou třetinou.\n\nLidsky řečeno: Pokud máte 1–3 běžné exekuce, u nepřednostního dluhu se zpravidla bere jedna třetina. Při 4 a více může být srážka vyšší a mohou se brát dvě třetiny. Kalkulačka proto potřebuje vědět, zda jste v tomto režimu."}>
                        <label className="block text-[10px] font-bold text-slate-700 mb-1 w-fit cursor-help border-b border-dotted border-slate-400">Počet souběžných exekucí</label>
                      </Tooltip>
                      <select name="pocetExekuci" value={data.pocetExekuci} onChange={handleInputChange} className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg font-bold text-sm">
@@ -882,7 +891,7 @@ const HlavniKalkulackaPage = () => {
                      </select>
                   </div>
                   <div>
-                     <Tooltip text="Nepřednostní pohledávky se zpravidla uspokojují z první třetiny. Přednostní pohledávky se uspokojují ze druhé třetiny a podle potřeby i z první třetiny; výživné má v druhé třetině přednost před ostatními přednostními pohledávkami.">
+                     <Tooltip text={"Právně přesně: U nepřednostní pohledávky se zpravidla sráží jedna třetina zbytku příjmu. U přednostních pohledávek se srážejí dvě třetiny; mezi přednostní patří například výživné, náhrada újmy na zdraví, některé daně nebo pojistné. Výživné má v druhé třetině zvláštní pořadí.\n\nLidsky řečeno: Běžná půjčka nebo nezaplacená faktura bývá nepřednostní dluh. Alimenty, některé dluhy státu nebo škoda na zdraví jsou přednostní. U přednostního dluhu vám může být sraženo více peněz."}>
                        <label className="block text-[10px] font-bold text-slate-700 mb-1 w-fit cursor-help border-b border-dotted border-slate-400">Druh pohledávky</label>
                      </Tooltip>
                      <select name="typPohledavky" value={data.typPohledavky} onChange={handleInputChange} className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg font-bold text-sm">
@@ -893,7 +902,7 @@ const HlavniKalkulackaPage = () => {
                   </div>
                   <label className="flex items-start gap-2 p-2 bg-slate-50 rounded-lg border border-slate-200 w-fit cursor-pointer">
                     <input type="checkbox" name="uplatnitPausalPlatce" checked={data.uplatnitPausalPlatce} onChange={handleInputChange} className="mt-0.5 accent-blue-600" />
-                    <Tooltip text="Plátci mzdy nebo jiného příjmu může za zákonných podmínek náležet paušálně stanovená náhrada nákladů. Její výše činí nejvýše 50 Kč za kalendářní měsíc a zároveň nesmí přesáhnout jednu třetinu sražené částky zaokrouhlenou nahoru. Náhrada se uspokojuje ze sražené částky.">
+                    <Tooltip text={"Právně přesně: Plátci mzdy nebo jiného příjmu může náležet paušální náhrada nákladů až 50 Kč za měsíc, nejvýše však jedna třetina sražené částky zaokrouhlená nahoru. Tato náhrada se hradí z už provedené srážky, nikoli navíc z příjmu dlužníka.\n\nLidsky řečeno: Zaměstnavatel nebo jiný plátce si může ze sražených peněz ponechat malou část za administrativu. Vám se kvůli tomu nestrhne dalších 50 Kč navíc; jen o tuto částku méně pokračuje dál na dluh."}>
                       <span className="text-[10px] font-medium text-slate-700 cursor-help border-b border-dotted border-slate-400">Plátce příjmu uplatňuje paušální náhradu nákladů.</span>
                     </Tooltip>
                   </label>
@@ -1024,26 +1033,26 @@ const HlavniKalkulackaPage = () => {
                 <div className="grid sm:grid-cols-2 gap-4">
                   <AnalyticCard 
                     title="Dlužníkovi po srážce zůstává" 
-                    titleTooltip="Celkem, co vám po srážce zůstane. U nepřednostních exekucí zpravidla nezabavitelná částka + druhá a třetí třetina; u přednostních nebo v režimu 4+ nezabavitelná částka + třetí třetina; navíc se mohou přičíst zákonem nepostižitelné příjmy."
+                    titleTooltip={"Právně přesně: Jde o součet části postižitelného příjmu, která po provedení zákonné srážky zůstává dlužníkovi, a případných zadaných příjmů nepodléhajících srážkám. Není to totéž co samotná nezabavitelná částka – podle režimu vám může zůstat i jedna nebo dvě třetiny zbytku příjmu.\n\nLidsky řečeno: Tohle je částka, kterou vám kalkulačka po exekuční srážce nechá. Nezabavitelná částka je jen její základ; podle typu dluhu vám může zůstat ještě část peněz nad ni."}
                     value={results.ex.kVyplate} 
                     color="green" 
                     subtitle="Částka k výplatě po odečtení srážek."
                   >
                     <div className="space-y-1">
                       <div className="flex justify-between items-center text-xs text-green-800">
-                        <Tooltip text="Základní částka, která nesmí být při srážkách z příjmu sražena. Vychází ze zákonných částek a počtu započitatelných vyživovaných osob.">
+                        <Tooltip text={"Právně přesně: Nezabavitelná částka je základní část příjmu, kterou při výpočtu srážky nelze dlužníkovi srazit. Vychází ze zákonného základu a z počtu započitatelných vyživovaných osob.\n\nLidsky řečeno: Je to minimální částka, kterou vám zákon při výpočtu chrání. Neznamená to ale, že vám zůstane jen tolik – podle typu exekuce vám mohou zůstat ještě další třetiny příjmu."}>
                           <span className="cursor-help border-b border-dotted border-green-400">Nezabavitelná částka</span>
                         </Tooltip>
                         <strong>{results.ex.legalniMinimum.toLocaleString()} Kč</strong>
                       </div>
                       <div className="flex justify-between items-center text-xs text-green-800">
-                        <Tooltip text="Vámi zadané jiné příjmy, u nichž se předpokládá, že nepodléhají srážkám. Kalkulačka právní povahu konkrétní dávky nebo příjmu sama neověřuje.">
+                        <Tooltip text={"Právně přesně: Jde o vámi zadané příjmy, u nichž kalkulačka předpokládá, že z nich nelze provádět srážky podle pravidel srážek ze mzdy a jiných příjmů. Kalkulačka jejich právní povahu sama neověřuje.\n\nLidsky řečeno: Pokud máte peníze, ze kterých se tato srážka opravdu dělat nesmí, přičtou se k tomu, co vám po srážce zůstane. Pokud si nejste jistí, zda je konkrétní dávka chráněná, raději ji sem bez ověření nezadávejte."}>
                           <span className="cursor-help border-b border-dotted border-green-400">Zadané příjmy nepodléhající srážkám</span>
                         </Tooltip>
                         <strong>{data.chranenePrijmy1.toLocaleString()} Kč</strong>
                       </div>
                       <div className="flex justify-between items-center text-[10px] text-green-700 pt-1 mt-1 border-t border-green-200/50">
-                        <Tooltip text={`Pokud zbytek příjmu přesáhne částku ${results.ex.hranicePlneZabavitelna.toLocaleString()} Kč, tak část příjmu nad tuto hranici je postižitelná bez omezení a připočítává se ke srážce.`}>
+                        <Tooltip text={`Právně přesně: Po odečtení nezabavitelné částky se zkoumá zbytek příjmu. Pokud tento zbytek přesáhne ${results.ex.hranicePlneZabavitelna.toLocaleString()} Kč, vše nad tuto hranici je postižitelné bez omezení a připočítá se ke srážce.\n\nLidsky řečeno: Tato hranice se neporovnává s celou výplatou, ale až s tím, co zbude po odečtení nezabavitelné částky. Co je nad hranicí, už se nedělí na třetiny – tato část se srazí celá.`}>
                           <span className="cursor-help border-b border-dotted border-green-400">Hranice částky postižitelné bez omezení</span>
                         </Tooltip>
                         <strong>{results.ex.hranicePlneZabavitelna.toLocaleString()} Kč</strong>
@@ -1053,20 +1062,20 @@ const HlavniKalkulackaPage = () => {
 
                   <AnalyticCard 
                     title="Zákonná srážka" 
-                    titleTooltip="Celková částka sražená z příjmu. Paušální náhrada plátci mzdy se neodečítá navíc z čisté mzdy; je uspokojena z této již sražené částky a zbytek srážky se odvádí na exekuci."
+                    titleTooltip={"Právně přesně: Jde o celkovou částku, kterou lze podle zadaného typu pohledávky a režimu exekuce z příjmu srazit. Případná paušální náhrada plátce se hradí z této částky, nikoli navíc.\n\nLidsky řečeno: Toto je částka, o kterou se vám příjem skutečně sníží kvůli exekuci. Pokud si plátce vezme svou náhradu nákladů, vezme ji už z těchto sražených peněz."}
                     value={results.ex.srazka} 
                     color="red" 
                     subtitle={results.ex.forceTwoThirds ? "Uplatněna srážka ze DVOU třetin zbytku." : "Uplatněna srážka z JEDNÉ třetiny zbytku."}
                   >
                     <div className="flex justify-between items-center text-xs text-red-800">
-                      <Tooltip text="Paušálně stanovená náhrada nákladů plátce. Uspokojuje se ze sražené částky před ostatními pohledávkami.">
+                      <Tooltip text={"Právně přesně: Paušální náhrada nákladů plátce se uspokojuje ze sražené částky před ostatními pohledávkami. Nezvyšuje celkovou zákonnou srážku.\n\nLidsky řečeno: Tuto část si z již sražených peněz ponechá zaměstnavatel nebo jiný plátce za administrativu. Dlužníkovi se kvůli ní nic dalšího nestrhává."}>
                         <span className="cursor-help border-b border-dotted border-red-400">Paušální náhrada nákladů plátce</span>
                       </Tooltip>
                       <strong>{results.ex.nahradaPlatci} Kč</strong>
                     </div>
                     {results.ex.nahradaPlatci > 0 && (
                       <div className="flex justify-between items-center text-xs text-red-800 mt-1 border-t border-red-100 pt-1">
-                        <Tooltip text="Část celkové zákonné srážky, která po odečtení paušální náhrady plátci mzdy pokračuje do exekučního rozvrhu.">
+                        <Tooltip text={"Právně přesně: Jde o část zákonné srážky, která po odečtení paušální náhrady plátci pokračuje k uspokojení vymáhaných pohledávek.\n\nLidsky řečeno: To je to, co ze sražených peněz po odečtení administrativní náhrady skutečně pokračuje dál na exekuci."}>
                           <span className="cursor-help border-b border-dotted border-red-400">Část srážky po odečtení náhrady plátci</span>
                         </Tooltip>
                         <strong>{results.ex.srazkaCista.toLocaleString()} Kč</strong>
@@ -1086,26 +1095,26 @@ const HlavniKalkulackaPage = () => {
                   </h4>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                      <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
-                       <Tooltip text="Základní částka, která nesmí být sražena. Pro rok 2026 činí 85 % ze součtu životního minima a normativů + přidává se 1/4 za každou vyživovanou osobu.">
+                       <Tooltip text={"Právně přesně: Základní nezabavitelná částka na dlužníka je pro rok 2026 stanovena jako 85 % zákonného součtu; za každou započitatelnou vyživovanou osobu se přidává jedna čtvrtina základní nezabavitelné částky. Výsledná částka se zaokrouhluje podle zákonných pravidel.\n\nLidsky řečeno: Tohle je zákonem chráněný základ, který vám při výpočtu musí zůstat. Děti a další započitatelné vyživované osoby ho mohou zvýšit."}>
                          <p className="text-[9px] text-slate-500 uppercase font-bold mb-1 cursor-help border-b border-dotted border-slate-400 w-fit">Nezabavitelná částka</p>
                        </Tooltip>
                        <p className="font-black text-slate-800 text-lg">{results.ex.legalniMinimum.toLocaleString()}</p>
                        <p className="text-[8px] text-slate-400 mt-1">Započítán partner: {results.ex.partnerZapocitan ? 'ANO' : 'NE'}</p>
                      </div>
                      <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
-                       <Tooltip text="Část zbytku mzdy určená k dělení na třetiny po omezení zákonným limitem a po snížení na nejbližší nižší násobek tří. Případný zbytek 1–2 Kč zůstává dlužníkovi.">
+                       <Tooltip text={"Právně přesně: Po odečtení nezabavitelné částky a oddělení části postižitelné bez omezení se zbývající část příjmu sníží na nejbližší nižší částku dělitelnou třemi. Tato část se následně rozdělí na třetiny; případný zbytek 1–2 Kč zůstává dlužníkovi.\n\nLidsky řečeno: Z peněz, které zůstanou nad nezabavitelnou částku, se nejdřív oddělí vše nad zákonný limit. Zbytek se upraví tak, aby šel přesně rozdělit na tři stejné díly."}>
                          <p className="text-[9px] text-slate-500 uppercase font-bold mb-1 cursor-help border-b border-dotted border-slate-400 w-fit">Část příjmu určená k rozdělení na třetiny</p>
                        </Tooltip>
                        <p className="font-black text-slate-800 text-lg">{results.ex.zbytekKDeleni.toLocaleString()}</p>
                      </div>
                      <div className="p-3 bg-amber-50 rounded-lg border-l-2 border-amber-400">
-                       <Tooltip text="Výsledek dělení 'zbytku' třemi (nebo limitu třemi). První třetina jde vždy na dluhy, třetí třetina vám zůstane k výplatě. Osud prostřední (druhé) třetiny závisí na typu dluhu.">
+                       <Tooltip text={"Právně přesně: Jedna třetina je třetina zákonem určené části zbytku příjmu. První třetina se používá na pohledávky, třetí třetina zůstává dlužníkovi a použití druhé třetiny závisí na typu pohledávky nebo na režimu 4+ exekucí.\n\nLidsky řečeno: Představte si tuto část příjmu rozdělenou na tři stejné hromádky. Jedna jde na dluhy, jedna vám zůstává vždy a o prostřední rozhoduje druh dluhu a počet exekucí."}>
                          <p className="text-[9px] text-amber-800 uppercase font-bold mb-1 cursor-help border-b border-dotted border-amber-600 w-fit">Jedna třetina</p>
                        </Tooltip>
                        <p className="font-black text-amber-900 text-lg">{results.ex.tretina.toLocaleString()}</p>
                      </div>
                      <div className="p-3 bg-red-50 rounded-lg border-l-2 border-red-400">
-                       <Tooltip text={`Pokud zbytek příjmu přesáhne částku ${results.ex.hranicePlneZabavitelna.toLocaleString()} Kč, tak část příjmu nad tuto hranici je postižitelná bez omezení a připočítává se ke srážce.`}>
+                       <Tooltip text={`Právně přesně: Část zbytku příjmu nad hranici ${results.ex.hranicePlneZabavitelna.toLocaleString()} Kč je postižitelná bez omezení a připočítává se ke srážce.\n\nLidsky řečeno: Co po odečtení nezabavitelné částky přesáhne tuto hranici, už se nedělí na třetiny. Tato část se srazí celá.`}>
                          <p className="text-[9px] text-red-800 uppercase font-bold mb-1 cursor-help border-b border-dotted border-red-600 w-fit">Část postižitelná bez omezení</p>
                        </Tooltip>
                        <p className="font-black text-red-900 text-lg">{results.ex.plneZabavitelna.toLocaleString()}</p>
@@ -1121,7 +1130,7 @@ const HlavniKalkulackaPage = () => {
                       {results.ex.zbytekMzdyRaw > 0 && (
                         <>
                           <p>3. <strong className="text-slate-700">Jedna třetina:</strong> {results.ex.zbytekKDeleni.toLocaleString()} (část po snížení na násobek 3) ÷ 3 = {results.ex.tretina.toLocaleString()} Kč (zaokrouhlovací zbytek {results.ex.zaokrouhlovaciZbytek} Kč dlužníkovi)</p>
-                          <p>4. <strong className="text-slate-700">Srážka:</strong> {results.ex.forceTwoThirds ? '2' : '1'} × {results.ex.tretina.toLocaleString()} ({results.ex.forceTwoThirds ? 'Přednostní' : 'Nepřednostní'}) + {results.ex.plneZabavitelna.toLocaleString()} (Nad limit) = {results.ex.srazka.toLocaleString()} Kč</p>
+                          <p>4. <strong className="text-slate-700">Srážka:</strong> {results.ex.forceTwoThirds ? '2' : '1'} × {results.ex.tretina.toLocaleString()} ({results.ex.forceTwoThirds ? ((data.typPohledavky === 'prednostni' || data.typPohledavky === 'vyzivne') ? 'přednostní pohledávka / výživné' : 'režim 4+ exekucí') : 'nepřednostní pohledávka'}) + {results.ex.plneZabavitelna.toLocaleString()} (část postižitelná bez omezení) = {results.ex.srazka.toLocaleString()} Kč</p>
                           <p>5. <strong className="text-slate-700">K výplatě:</strong> {results.ex.prijemPredSrazkou.toLocaleString()} (Příjem) - {results.ex.srazka.toLocaleString()} (Srážka){data.chranenePrijmy1 > 0 ? ` + ${data.chranenePrijmy1.toLocaleString()} (jiné příjmy nepodléhající srážkám)` : ''} = {results.ex.kVyplate.toLocaleString()} Kč</p>
                         </>
                       )}
@@ -1156,20 +1165,20 @@ const HlavniKalkulackaPage = () => {
                 <div className="grid sm:grid-cols-2 gap-4">
                   <AnalyticCard 
                     title="Zákonná měsíční srážka" 
-                    titleTooltip="Celková částka sražená z vašeho příjmu. Při oddlužení plněním splátkového kalendáře se z příjmů dlužníka standardně odvádí částka ve stejném rozsahu, v jakém mohou být při výkonu rozhodnutí nebo exekuci uspokojeny přednostní pohledávky."
+                    titleTooltip={"Právně přesně: Při oddlužení plněním splátkového kalendáře se z příjmů dlužníka standardně odvádí částka ve stejném rozsahu, v jakém mohou být při výkonu rozhodnutí nebo exekuci uspokojeny přednostní pohledávky. Prakticky se tedy vychází ze dvou třetin zbytku příjmu a případné části postižitelné bez omezení.\n\nLidsky řečeno: Kalkulačka vezme váš příjem, ponechá vám zákonem chráněnou část a z další části počítá splátku přísněji než u běžné nepřednostní exekuce. Tohle je částka, která každý měsíc odchází do oddlužení ještě před jejím dalším rozdělením."}
                     value={results.insJ.srazka} 
                     color="slate" 
                     subtitle="Sráží se vždy jako pro přednostní pohledávky."
                   >
                     <div className="flex justify-between items-center text-xs border-b border-slate-100 pb-2 mb-2">
-                      <Tooltip text="Povinná měsíční odměna a paušální náhrada insolvenčnímu správci. Odečte se jako úplně první položka z vaší celkové srážky.">
+                      <Tooltip text={"Právně přesně: Z měsíční částky určené pro oddlužení se hradí odměna a náhrada hotových výdajů insolvenčního správce. Kalkulačka tuto položku odečítá před výpočtem částky dostupné nezajištěným věřitelům.\n\nLidsky řečeno: Ne všechno, co se vám měsíčně srazí, jde vašim běžným věřitelům. Část peněz nejdřív pokryje činnost insolvenčního správce a teprve zbytek může jít dál."}>
                         <span className="text-slate-500 cursor-help border-b border-dotted border-slate-400">Měsíční odměna a hotové výdaje insolvenčního správce</span>
                       </Tooltip>
                       <strong className="text-slate-700">-{params.odmenaSpravceJednotlivec} Kč</strong>
                     </div>
                     {data.bezneMesicniVyzivne1 > 0 && (
                        <div className="flex justify-between items-center text-xs text-red-600 bg-red-50 p-1.5 rounded">
-                        <Tooltip text="Pokud platíte běžné výživné, insolvenční správce ho rovnou zaplatí z vaší měsíční srážky (přednostně před ostatními věřiteli).">
+                        <Tooltip text={"Právně přesně: Běžné zákonné výživné se v oddlužení hradí před nezajištěnými věřiteli. Kalkulačka proto zadané výživné odečítá před výpočtem částky, která zbývá na běžné nezajištěné pohledávky.\n\nLidsky řečeno: Alimenty mají přednost před běžnými dluhy. Pokud je platíte, nejdřív se z měsíčních peněz pro oddlužení uhradí výživné a až potom se dělí peníze mezi ostatní věřitele."}>
                           <span className="flex items-center gap-1 cursor-help border-b border-dotted border-red-400"><Gavel size={12}/> Běžné zákonné výživné</span>
                         </Tooltip>
                         <strong>-{data.bezneMesicniVyzivne1} Kč</strong>
@@ -1179,14 +1188,14 @@ const HlavniKalkulackaPage = () => {
 
                   <AnalyticCard 
                     title="Orientačně pro nezajištěné věřitele" 
-                    titleTooltip="Modelová částka, která po odečtení zadaných přednostně hrazených položek zbývá k rozdělení mezi nezajištěné věřitele."
+                    titleTooltip={"Právně přesně: Jde o modelovou část měsíční srážky, která po odečtení zadaných prioritních položek, zejména odměny a hotových výdajů správce a běžného výživného, zbývá pro nezajištěné věřitele. Skutečný rozvrh může ovlivnit i další pohledávky a náklady řízení.\n\nLidsky řečeno: Tohle je odhad, kolik z vaší měsíční srážky skutečně zbude na běžné dluhy – například půjčky, kreditní karty nebo nezaplacené faktury."}
                     value={results.proVeriteleJ} 
                     color="indigo" 
                     subtitle="Modelová částka po odečtení správce a zadaného běžného výživného."
                   >
                     <div className="text-[11px] text-green-800 bg-green-50 p-2.5 rounded mt-2 border border-green-100 space-y-1.5">
                       <div className="flex justify-between items-center gap-3">
-                        <Tooltip text="Jde o částku, která dlužníkovi zůstává po provedení zákonné srážky, ještě před případným dobrovolným plněním ze závazného příslibu. Pokud je příslib zadán, níže se odečte a zobrazí se částka, která dlužníkovi po příslibu skutečně zbývá.">
+                        <Tooltip text={"Právně přesně: Jde o částku, která dlužníkovi zůstává po provedení zákonné srážky, ještě před případným dobrovolným plněním ze závazného příslibu. Příslib není další zákonnou srážkou; jde o dobrovolné plnění z peněz, které by jinak dlužníkovi zůstaly.\n\nLidsky řečeno: Nejdřív vidíte, kolik vám zůstane po povinné srážce. Pokud jste slíbili platit ještě něco navíc ze své nezabavitelné částky, kalkulačka tuto částku odečte na dalším řádku a ukáže, kolik vám opravdu zbude pro vlastní potřebu."}>
                           <span className="cursor-help border-b border-dotted border-green-400">
                             {results.coverageJ.debtorPromise > 0 ? 'Po zákonné srážce zůstává' : 'Dlužníkovi po zákonné srážce zůstává'}
                           </span>
@@ -1227,7 +1236,7 @@ const HlavniKalkulackaPage = () => {
 
                    <div className="bg-slate-900 p-6 rounded-xl shadow-sm text-white flex flex-col justify-between print:bg-white print:border print:text-black">
                      <div>
-                       <Tooltip text="Orientační modelová míra uspokojení zadaných nezajištěných pohledávek. Nejde o soudem stanovený cíl ani o záruku výsledku oddlužení; skutečné plnění může ovlivnit změna příjmů, výše zjištěných pohledávek, další prioritní položky a náklady řízení.">
+                       <Tooltip text={"Právně přesně: Jde o orientační modelovou míru uspokojení zadaných nezajištěných pohledávek. Nejde o soudem stanovený cíl ani o záruku výsledku. Skutečné plnění ovlivní zejména výše zjištěných pohledávek, změny příjmů, další prioritní pohledávky a náklady řízení. V této verzi se do dlouhodobého procenta nezapočítává závazný příslib ani plnění třetí osoby; ty slouží ke kontrole minimálního plnění.\n\nLidsky řečeno: Pokud kalkulačka ukáže například 35 %, znamená to, že při dnešních zadaných údajích by se běžným nezajištěným věřitelům modelově zaplatilo asi 35 % jejich dluhů. Není to slib ani pevně stanovené procento – během oddlužení se může změnit."}>
                          <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1 cursor-help border-b border-dotted border-blue-500 w-fit print:text-gray-600 print:border-none">Modelové uspokojení</p>
                        </Tooltip>
                        <p className="text-[11px] text-slate-400 mb-3 print:text-gray-800">Nezajištěných věřitelů (Rozvrh {data.delkaOddluzeni} měsíců + Zpeněžení {data.vytezekZpenezeni} Kč)</p>
@@ -1281,26 +1290,26 @@ const HlavniKalkulackaPage = () => {
                 <div className="grid sm:grid-cols-2 gap-4">
                   <AnalyticCard 
                     title="Celková měsíční srážka manželů" 
-                    titleTooltip="Součet samostatně vypočtených srážek z příjmů obou manželů. U každého se srážka stanoví podle pravidel pro oddlužení."
+                    titleTooltip={"Právně přesně: Srážka se vypočte samostatně z příjmu každého manžela podle pravidel oddlužení a následně se obě částky sečtou. Nejde o jednu srážku vypočtenou ze společného příjmu domácnosti.\n\nLidsky řečeno: Kalkulačka nejdřív spočítá, kolik se srazí manželovi A a kolik manželovi B, a teprve potom obě částky sečte."}
                     value={results.srazkaCelkemM} 
                     color="slate" 
                     subtitle="Součet samostatně vypočtených srážek obou manželů."
                   >
                     <div className="flex justify-between items-center text-xs">
-                      <Tooltip text="Rozpad, kolik se z celkové sumy přesně strhne každému z manželů z jeho vlastní výplaty.">
+                      <Tooltip text={"Právně přesně: U každého manžela se zákonná srážka stanoví samostatně z jeho vlastních příjmů a jeho započitatelných údajů.\n\nLidsky řečeno: Tady vidíte, kolik z celkové společné splátky platí manžel A a kolik manžel B."}>
                         <span className="text-slate-500 cursor-help border-b border-dotted border-slate-400">Srážka Manžel A / Manžel B</span>
                       </Tooltip>
                       <strong className="text-slate-700">{results.insM_A.srazka.toLocaleString()} / {results.insM_B.srazka.toLocaleString()} Kč</strong>
                     </div>
                     <div className="flex justify-between items-center text-[10px] text-slate-400 mt-2 border-t pt-2">
-                      <Tooltip text="Poplatek pro insolvenčního správce (1,5násobek poplatku jednotlivce), který se hradí přednostně.">
+                      <Tooltip text={"Právně přesně: U společného oddlužení manželů se z měsíční částky hradí odměna a náhrada hotových výdajů insolvenčního správce v částce stanovené pro společné oddlužení. Kalkulačka ji odečítá před výpočtem částky pro nezajištěné věřitele.\n\nLidsky řečeno: Ani u manželů nejde celá společná srážka věřitelům. Nejdřív se z ní zaplatí náklady insolvenčního správce."}>
                         <span className="cursor-help border-b border-dotted border-slate-400">Měsíční odměna a hotové výdaje správce – manželé</span>
                       </Tooltip>
                       <span>-{params.odmenaSpravceManzele} Kč</span>
                     </div>
                     {(data.bezneMesicniVyzivne1 > 0 || data.bezneMesicniVyzivne2 > 0) && (
                       <div className="flex justify-between items-center text-[10px] text-red-500 mt-1">
-                        <Tooltip text="Výživné se i v oddlužení hradí přednostně před běžnými dluhy.">
+                        <Tooltip text={"Právně přesně: Běžné zákonné výživné obou manželů se hradí před nezajištěnými věřiteli a snižuje částku dostupnou pro jejich běžné dluhy.\n\nLidsky řečeno: Pokud některý z manželů platí alimenty, ty se musí zaplatit dříve než půjčky a ostatní běžné dluhy."}>
                           <span className="cursor-help border-b border-dotted border-red-300">Běžné zákonné výživné celkem</span>
                         </Tooltip>
                         <span>-{data.bezneMesicniVyzivne1 + data.bezneMesicniVyzivne2} Kč</span>
@@ -1310,16 +1319,32 @@ const HlavniKalkulackaPage = () => {
 
                   <AnalyticCard 
                     title="Orientačně pro nezajištěné věřitele" 
-                    titleTooltip="Modelová částka, která ze součtu srážek obou manželů po odečtení zadaných přednostně hrazených položek zbývá k rozdělení mezi nezajištěné věřitele."
+                    titleTooltip={"Právně přesně: Jde o modelovou část součtu měsíčních srážek obou manželů, která po odečtení zadaných prioritních položek zbývá pro nezajištěné věřitele. Skutečné plnění může ovlivnit i další pohledávky a náklady řízení.\n\nLidsky řečeno: Tohle je odhad společné částky, která po správci a případném výživném opravdu zbude na běžné dluhy manželů."}
                     value={results.proVeriteleM} 
                     color="indigo" 
                     subtitle="Společná částka k rozvrhu po odečtení priorit."
                   >
-                    <div className="flex justify-between items-center text-[11px] text-green-800 bg-green-50 p-2.5 rounded mt-2 border border-green-100">
-                      <Tooltip text="Součet částek, které po zákonných srážkách zůstávají oběma manželům, včetně zadaných jiných příjmů nepodléhajících srážkám.">
-                        <span className="cursor-help border-b border-dotted border-green-400">Manželům po srážkách zůstává celkem</span>
-                      </Tooltip>
-                      <strong className="text-sm">{results.kVyplateCelkemM.toLocaleString()} Kč</strong>
+                    <div className="text-[11px] text-green-800 bg-green-50 p-2.5 rounded mt-2 border border-green-100 space-y-1.5">
+                      <div className="flex justify-between items-center gap-3">
+                        <Tooltip text={"Právně přesně: Jde o součet částek, které oběma manželům zůstávají po zákonných srážkách, ještě před případným dobrovolným závazným příslibem.\n\nLidsky řečeno: Tohle jsou peníze, které manželům dohromady zůstanou po povinných srážkách. Pokud se zavážou platit ještě něco navíc ze svých peněz, níže se tato částka odečte."}>
+                          <span className="cursor-help border-b border-dotted border-green-400">
+                            {results.coverageM.debtorPromise > 0 ? 'Po zákonných srážkách manželům zůstává' : 'Manželům po zákonných srážkách zůstává celkem'}
+                          </span>
+                        </Tooltip>
+                        <strong className="text-sm whitespace-nowrap">{results.kVyplateCelkemM.toLocaleString()} Kč</strong>
+                      </div>
+                      {results.coverageM.debtorPromise > 0 && (
+                        <>
+                          <div className="flex justify-between items-center gap-3 text-slate-600">
+                            <span>Závazný příslib manželů</span>
+                            <strong className="whitespace-nowrap">−{Math.round(results.coverageM.debtorPromise).toLocaleString()} Kč</strong>
+                          </div>
+                          <div className="flex justify-between items-center gap-3 pt-1.5 border-t border-green-200 font-bold text-green-900">
+                            <span>Manželům po příslibu zbývá</span>
+                            <strong className="text-sm whitespace-nowrap">{Math.max(0, Math.round(results.kVyplateCelkemM - results.coverageM.debtorPromise)).toLocaleString()} Kč</strong>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </AnalyticCard>
                 </div>
@@ -1327,7 +1352,7 @@ const HlavniKalkulackaPage = () => {
                 <div className="grid sm:grid-cols-2 gap-4 print:break-inside-avoid">
                    <div className="bg-slate-900 p-6 rounded-xl shadow-sm text-white flex flex-col justify-between print:bg-white print:border print:text-black">
                      <div>
-                       <Tooltip text="Orientační modelová míra uspokojení zadaných nezajištěných pohledávek. Nejde o soudem stanovený cíl ani o záruku výsledku oddlužení; skutečné plnění může ovlivnit změna příjmů, výše zjištěných pohledávek, další prioritní položky a náklady řízení.">
+                       <Tooltip text={"Právně přesně: Jde o orientační modelovou míru uspokojení zadaných nezajištěných pohledávek. Nejde o soudem stanovený cíl ani o záruku výsledku. Skutečné plnění ovlivní zejména výše zjištěných pohledávek, změny příjmů, další prioritní pohledávky a náklady řízení. V této verzi se do dlouhodobého procenta nezapočítává závazný příslib ani plnění třetí osoby; ty slouží ke kontrole minimálního plnění.\n\nLidsky řečeno: Pokud kalkulačka ukáže například 35 %, znamená to, že při dnešních zadaných údajích by se běžným nezajištěným věřitelům modelově zaplatilo asi 35 % jejich dluhů. Není to slib ani pevně stanovené procento – během oddlužení se může změnit."}>
                          <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1 cursor-help border-b border-dotted border-blue-500 w-fit print:text-gray-600 print:border-none">Modelové uspokojení</p>
                        </Tooltip>
                        <p className="text-[11px] text-slate-400 mb-3 print:text-gray-800">Společné dluhy rodiny ({data.delkaOddluzeni} měs. + Zpeněžení {data.vytezekZpenezeni} Kč)</p>
