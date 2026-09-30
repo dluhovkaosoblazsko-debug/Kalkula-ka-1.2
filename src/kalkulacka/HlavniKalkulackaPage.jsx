@@ -10,7 +10,7 @@ const Tooltip = ({ children, text }) => (
   <div className="group relative flex items-center gap-1.5 w-fit cursor-help">
     {children}
     <Info size={13} className="text-slate-400 group-hover:text-blue-500 transition-colors shrink-0 print:hidden" />
-    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-64 p-3 bg-slate-800 text-white text-[11px] font-medium rounded-lg shadow-xl z-50 text-center pointer-events-none print:hidden leading-snug">
+    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-80 max-w-[calc(100vw-2rem)] p-3 bg-slate-800 text-white text-[11px] font-medium rounded-lg shadow-xl z-50 text-left whitespace-pre-line pointer-events-none print:hidden leading-snug">
       {text}
       <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800"></div>
     </div>
@@ -187,7 +187,10 @@ const MinimumCoveragePanel = ({ coverage, data, onToggle, onAmountChange, modeLa
           {promiseEnabled && (
             <div className="pl-6">
               <input type="number" min="0" step="1" name={promiseKey} value={data[promiseKey] ?? ''} onChange={onAmountChange} className="w-full rounded-lg border border-slate-600 bg-slate-950 px-3 py-2 text-sm text-white outline-none focus:border-cyan-400 print:bg-white print:text-slate-900" placeholder="Např. 500" />
-              <p className="mt-1 text-xs text-slate-400 print:text-slate-600">Dlužník může k návrhu připojit závazný příslib, že chybějící plnění bude hradit ze základní částky, která mu nesmí být sražena, nebo z jiných příjmů, které nelze postihnout výkonem rozhodnutí či exekucí. Takové plnění nesmí ohrozit základní hmotné potřeby dlužníka ani osob odkázaných výživou. Kalkulačka posuzuje pouze matematické pokrytí, nikoli udržitelnost příslibu.</p>
+              <div className="mt-2 space-y-1.5 text-xs text-slate-400 print:text-slate-600">
+                <p><strong className="text-slate-300 print:text-slate-700">Právně přesně:</strong> Dlužník může k návrhu připojit závazný příslib, že chybějící plnění bude hradit ze základní částky, která mu nesmí být sražena, nebo z jiných příjmů, které nelze postihnout výkonem rozhodnutí či exekucí. Takové plnění nesmí ohrozit základní hmotné potřeby dlužníka ani osob odkázaných výživou. Kalkulačka posuzuje pouze matematické pokrytí, nikoli udržitelnost příslibu.</p>
+                <p><strong className="text-cyan-300 print:text-cyan-800">Lidsky řečeno:</strong> Z vašeho příjmu se podle zákona nesrazí dost peněz. Můžete proto dobrovolně slíbit, že budete každý měsíc přidávat něco navíc ze své nezabavitelné částky. Vám pak zůstane méně, ale chybějící částku pro oddlužení tím můžete dorovnat.</p>
+              </div>
             </div>
           )}
 
@@ -201,12 +204,16 @@ const MinimumCoveragePanel = ({ coverage, data, onToggle, onAmountChange, modeLa
                   onChange={(event) => onToggle(`povolitPlneniTretiOsoby${fieldSuffix}`, thirdPartyKey, event.target.checked)}
                   className="mt-0.5 h-4 w-4 accent-cyan-400"
                 />
-                <span><strong>Chybějící částku může poskytovat třetí osoba.</strong><span className="block text-xs text-slate-400 print:text-slate-600">Další plnění může být zajištěno například darovací smlouvou nebo smlouvou o důchodu.</span></span>
+                <span>
+                  <strong>Chybějící částku může poskytovat třetí osoba.</strong>
+                  <span className="mt-1 block text-xs text-slate-400 print:text-slate-600"><strong className="text-slate-300 print:text-slate-700">Právně přesně:</strong> Potřebné plnění může doplnit závazek třetí osoby poskytovat peníze ve prospěch majetkové podstaty, například na základě darovací smlouvy nebo smlouvy o důchodu.</span>
+                  <span className="mt-1 block text-xs text-cyan-300 print:text-cyan-800"><strong>Lidsky řečeno:</strong> Když sami nedokážete potřebnou částku doplnit, může vám pomoci někdo jiný – například rodič nebo partner – který se zaváže pravidelně posílat peníze do oddlužení. Tyto peníze nejdou z částky, která zůstává vám.</span>
+                </span>
               </label>
               {thirdPartyEnabled && (
                 <div className="pl-6">
                   <input type="number" min="0" step="1" name={thirdPartyKey} value={data[thirdPartyKey] ?? ''} onChange={onAmountChange} className="w-full rounded-lg border border-slate-600 bg-slate-950 px-3 py-2 text-sm text-white outline-none focus:border-cyan-400 print:bg-white print:text-slate-900" placeholder="Např. 1000" />
-                  <p className="mt-1 text-xs text-slate-400 print:text-slate-600">Kalkulačka ověřuje pouze matematické pokrytí minimální částky, neposuzuje platnost smlouvy ani schopnost třetí osoby závazek plnit.</p>
+                  <p className="mt-1 text-xs text-slate-400 print:text-slate-600">Kalkulačka ověřuje pouze, zda zadaná částka matematicky stačí. Neposuzuje platnost smlouvy ani to, zda bude třetí osoba schopná závazek skutečně plnit.</p>
                 </div>
               )}
             </>
@@ -906,7 +913,7 @@ const HlavniKalkulackaPage = () => {
                        </select>
                      </div>
                      <div>
-                       <Tooltip text="Odhad částky z případného zpeněžení majetku, která bude po nákladech a po zohlednění práv třetích osob dostupná pro nezajištěné věřitele. Ne každý majetek musí být v konkrétním oddlužení zpeněžen.">
+                       <Tooltip text={"Právně přesně: Zadejte odhad částky, která po případném zpeněžení majetku a souvisejících nákladech skutečně připadne nezajištěným věřitelům. Ne každý majetek musí být v oddlužení zpeněžen.\n\nLidsky řečeno: Nezadávejte cenu všeho, co vlastníte. Zadejte jen odhad toho, kolik by po případném prodeji majetku opravdu zbylo pro nezajištěné věřitele – například po prodeji auta."}>
                          <label className="block text-[10px] font-bold text-green-700 mb-1 w-fit cursor-help border-b border-dotted border-green-500">Výtěžek ze zpeněžení majetku</label>
                        </Tooltip>
                        <input type="number" name="vytezekZpenezeni" value={data.vytezekZpenezeni} onChange={handleInputChange} className="w-full p-2 bg-green-50 border border-green-200 rounded-lg font-bold text-green-900 text-sm" />
@@ -914,7 +921,7 @@ const HlavniKalkulackaPage = () => {
                   </div>
                   
                   <div>
-                    <Tooltip text="Součet všech vašich běžných dluhů (spotřebitelské úvěry, kreditní karty, nezaplacené faktury), u kterých věřitelé nemají žádnou zástavu. Právě z této částky se na konci počítá, na kolik procent jste dluhy umořili.">
+                    <Tooltip text={"Právně přesně: Jde o pohledávky věřitelů, které nejsou zajištěny konkrétním majetkem. Z této částky kalkulačka počítá modelovou míru uspokojení nezajištěných věřitelů.\n\nLidsky řečeno: Sem obvykle patří běžné půjčky, spotřebitelské úvěry, kreditní karty, kontokorenty nebo nezaplacené faktury, za které neručíte konkrétní věcí. Tohle je hlavní částka, vůči které kalkulačka počítá, kolik procent dluhů během oddlužení přibližně zaplatíte."}>
                       <label className="block text-[10px] font-bold text-indigo-700 mb-1 w-fit cursor-help border-b border-dotted border-indigo-400">Nezajištěné pohledávky věřitelů</label>
                     </Tooltip>
                     <input
@@ -932,13 +939,13 @@ const HlavniKalkulackaPage = () => {
                   
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <Tooltip text="Zadejte pohledávky zajištěných věřitelů. Hodnota je v této verzi informativní a nevstupuje do procenta modelového uspokojení nezajištěných věřitelů; zajištění věřitelé se uspokojují z výtěžku zpeněžení zajištění.">
+                      <Tooltip text={"Právně přesně: Zajištěný věřitel se v rozsahu zajištění uspokojuje ze zpeněžení majetku, kterým je jeho pohledávka zajištěna. Pokud hodnota zajištění nestačí, rozdíl se může za zákonných podmínek považovat za nezajištěnou pohledávku. Toto pole je zde informativní a nevstupuje přímo do modelového procenta nezajištěných věřitelů.\n\nLidsky řečeno: Typickým příkladem je hypotéka na dům. Věřitel dostává peníze hlavně z prodeje domu. Když prodej pokryje celý dluh, je uhrazený. Když nestačí, zbývající část může pokračovat jako nezajištěný dluh."}>
                         <label className="block text-[10px] font-bold text-slate-600 mb-1 w-fit cursor-help border-b border-dotted border-slate-400">Zajištěné pohledávky</label>
                       </Tooltip>
                       <input type="number" name="dluhyZajistene" value={data.dluhyZajistene} onChange={handleInputChange} className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm" />
                     </div>
                     <div>
-                      <Tooltip text="Informativní údaj o pohledávkách, kterých se osvobození podle insolvenčního zákona nedotýká. Konkrétní právní režim závisí na druhu pohledávky; toto pole nevstupuje do procenta modelového uspokojení nezajištěných věřitelů.">
+                      <Tooltip text={"Právně přesně: Osvobození se nedotýká například zákonného výživného, náhrady škody způsobené na zdraví, škody způsobené úmyslným porušením právní povinnosti, některých peněžitých trestů nebo majetkových sankcí za úmyslný trestný čin a pohledávky insolvenčního správce na odměnu a hotové výdaje. Toto pole je informativní a nevstupuje do modelového procenta nezajištěných věřitelů.\n\nLidsky řečeno: Jsou to dluhy, které vám mohou zůstat i po úspěšném oddlužení. Typicky třeba dlužné výživné nebo náhrada škody na zdraví. Kalkulačka je proto vede zvlášť."}>
                         <label className="block text-[10px] font-bold text-slate-600 mb-1 w-fit cursor-help border-b border-dotted border-slate-400">Pohledávky, kterých se osvobození nedotýká</label>
                       </Tooltip>
                       <input type="number" name="dluhyNeosvoboditelne" value={data.dluhyNeosvoboditelne} onChange={handleInputChange} className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm" />
