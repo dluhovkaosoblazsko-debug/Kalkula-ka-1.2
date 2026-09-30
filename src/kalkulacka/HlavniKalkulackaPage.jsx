@@ -913,7 +913,7 @@ const HlavniKalkulackaPage = () => {
                   
                   <div className="grid grid-cols-2 gap-3">
                      <div>
-                       <Tooltip text="Standardní režim je 36 měsíců. Pětiletá varianta (60 měsíců) se použije zejména tehdy, bylo-li dlužníku v posledních 20 letech přiznáno osvobození od placení pohledávek zahrnutých do oddlužení.">
+                       <Tooltip text={"Právně přesně: Kalkulačka používá 36 měsíců jako standardní dobu oddlužení. Variantu 60 měsíců použijte zejména tehdy, pokud bylo dlužníku v posledních 20 letech před podáním nového návrhu přiznáno osvobození od placení pohledávek zahrnutých do předchozího oddlužení.\n\nLidsky řečeno: Běžné nové oddlužení kalkulačka počítá na 3 roky. Pokud jste už v posledních 20 letech jedno oddlužení úspěšně dokončili a dostali osvobození od zbytku dluhů, zvolte 5 let. Delší doba znamená více měsíčních splátek a může zvýšit celkovou částku zaplacenou věřitelům."}>
                          <label className="block text-[10px] font-bold text-slate-600 mb-1 w-fit cursor-help border-b border-dotted border-slate-400">Délka oddlužení</label>
                        </Tooltip>
                        <select name="delkaOddluzeni" value={data.delkaOddluzeni} onChange={handleInputChange} className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg font-bold text-sm">
@@ -987,19 +987,19 @@ const HlavniKalkulackaPage = () => {
                     <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-widest border-b pb-2 pt-4">Zákonné koeficienty a podmínky</h4>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <Tooltip text="Procento ze součtu zákonných minim, které tvoří základní nezabavitelnou částku. Pro rok 2026 je to 85 %.">
+                        <Tooltip text={"Právně přesně: Tento koeficient určuje, jaká část zákonného základu se použije pro výpočet základní nezabavitelné částky na dlužníka. Pro výpočty roku 2026 kalkulačka používá 85 %. Z této základní částky se následně odvozují i čtvrtiny za započitatelné vyživované osoby.\n\nLidsky řečeno: Je to jedno z čísel, podle kterých zákon určuje, kolik vám musí při srážce minimálně zůstat. Běžný uživatel ho nemá důvod měnit. Když ho zvýšíte, nezabavitelná částka poroste a srážka bude nižší; při snížení naopak."}>
                           <label className="block text-xs font-bold text-slate-600 mb-1 w-full text-left cursor-help border-b border-dotted border-slate-400">Podíl pro základní nezabavitelnou částku (%)</label>
                         </Tooltip>
                         <input type="number" value={params.koeficientZahladu} onChange={(e) => setParams({...params, koeficientZahladu: parseFloat(e.target.value) || 0})} className="w-full p-2 border border-blue-200 bg-blue-50 rounded font-bold text-sm" />
                       </div>
                       <div>
-                        <Tooltip text="Násobek součtu minim, nad který je zbytek příjmu plně zabavitelný. Pro rok 2026 je to 1,9.">
+                        <Tooltip text={"Právně přesně: Tento koeficient se používá pro výpočet hranice, nad kterou je část zbytku příjmu po odečtení nezabavitelné částky postižitelná bez omezení. Pro rok 2026 kalkulačka používá násobek 1,9. Část nad takto vypočtenou hranicí se už nerozděluje na třetiny a připočítává se ke srážce celá.\n\nLidsky řečeno: U vyšších příjmů se všechno nad určitou hranici už nedělí na tři díly – tato část se srazí celá. Toto číslo určuje, kde ta hranice leží. Běžný uživatel ho nemá měnit."}>
                           <label className="block text-xs font-bold text-slate-600 mb-1 w-full text-left cursor-help border-b border-dotted border-slate-400">Násobek pro hranici srážky bez omezení</label>
                         </Tooltip>
                         <input type="number" step="0.1" value={params.koeficientZabavitelnosti} onChange={(e) => setParams({...params, koeficientZabavitelnosti: parseFloat(e.target.value) || 0})} className="w-full p-2 border border-blue-200 bg-blue-50 rounded font-bold text-sm" />
                       </div>
                       <div className="col-span-2 rounded-lg border border-blue-100 bg-blue-50 p-3">
-                        <Tooltip text="Tento limit není samostatně nastavovaná částka. Pro výjimku u 4+ exekucí se porovnává jedna třetina se součtem měsíční odměny a hotových výdajů insolvenčního správce zvýšených o DPH. Kalkulačka proto používá aktuální částku pro jednotlivce.">
+                        <Tooltip text={"Právně přesně: Tento limit není samostatně nastavovaná zákonná konstanta. Při posouzení výjimky z režimu 4+ exekucí u dlužníka s rozhodným důchodem se jedna třetina porovnává s částkou odpovídající měsíční odměně a hotovým výdajům insolvenčního správce pro jednotlivce. Kalkulačka proto limit odvozuje automaticky z aktuálně nastavené částky správce.\n\nLidsky řečeno: Některému důchodci se ani při 4 a více exekucích nemusí jen kvůli jejich počtu začít srážet dvě třetiny. Rozhoduje i to, jak vysoká vychází jedna třetina. Kalkulačka tuto hranici počítá sama; uživatel ji nemusí zadávat."}>
                           <span className="block text-xs font-bold text-slate-600 mb-1 border-b border-dotted border-slate-400 w-fit">Limit jedné třetiny pro výjimku u 4+ exekucí (odvozený)</span>
                         </Tooltip>
                         <strong className="text-sm text-blue-900">{params.odmenaSpravceJednotlivec.toLocaleString('cs-CZ')} Kč</strong>
