@@ -1037,7 +1037,7 @@ const HlavniKalkulackaPage = () => {
                 <div className="grid sm:grid-cols-2 gap-4">
                   <AnalyticCard 
                     title="Dlužníkovi po srážce zůstává" 
-                    titleTooltip="Orientačně tolik peněz vám po exekuční srážce může zůstat."
+                    titleTooltip={"Právně přesně: Jde o součet části postižitelného příjmu, která po provedení zákonné srážky zůstává dlužníkovi, a případných zadaných příjmů nepodléhajících srážkám. Není to totéž co samotná nezabavitelná částka – podle režimu vám může zůstat i jedna nebo dvě třetiny zbytku příjmu.\n\nLidsky řečeno: Orientačně tolik peněz vám po exekuční srážce může zůstat."}
                     value={results.ex.kVyplate} 
                     color="green" 
                     subtitle="Částka k výplatě po odečtení srážek."
@@ -1066,7 +1066,7 @@ const HlavniKalkulackaPage = () => {
 
                   <AnalyticCard 
                     title="Zákonná srážka" 
-                    titleTooltip="Orientačně jde o maximální částku, která vám může být z příjmu kvůli exekuci sražena."
+                    titleTooltip={"Právně přesně: Jde o celkovou částku, kterou lze podle zadaného typu pohledávky a režimu exekuce z příjmu srazit. Případná paušální náhrada plátce se hradí z této částky, nikoli navíc.\n\nLidsky řečeno: Orientačně jde o maximální částku, která vám může být z příjmu kvůli exekuci sražena."}
                     value={results.ex.srazka} 
                     color="red" 
                     subtitle={results.ex.forceTwoThirds ? "Uplatněna srážka ze DVOU třetin zbytku." : "Uplatněna srážka z JEDNÉ třetiny zbytku."}
@@ -1171,7 +1171,7 @@ const HlavniKalkulackaPage = () => {
                 <div className="grid sm:grid-cols-2 gap-4">
                   <AnalyticCard 
                     title="Zákonná měsíční srážka" 
-                    titleTooltip="Z vašeho příjmu vám zůstane zákonem chráněná část a z další části se vypočítá splátka pro oddlužení. Tohle je částka, která každý měsíc odchází do oddlužení ještě před jejím dalším rozdělením."
+                    titleTooltip={"Právně přesně: Při oddlužení plněním splátkového kalendáře se z příjmů dlužníka standardně odvádí částka ve stejném rozsahu, v jakém mohou být při výkonu rozhodnutí nebo exekuci uspokojeny přednostní pohledávky. Prakticky se tedy vychází ze dvou třetin zbytku příjmu a případné části postižitelné bez omezení.\n\nLidsky řečeno: Z vašeho příjmu vám zůstane zákonem chráněná část a z další části se vypočítá splátka pro oddlužení. Tohle je částka, která každý měsíc odchází do oddlužení ještě před jejím dalším rozdělením."}
                     value={results.insJ.srazka} 
                     color="slate" 
                     subtitle="Sráží se vždy jako pro přednostní pohledávky."
@@ -1194,7 +1194,7 @@ const HlavniKalkulackaPage = () => {
 
                   <AnalyticCard 
                     title="Orientačně pro nezajištěné věřitele" 
-                    titleTooltip="Orientačně tolik z vaší měsíční splátky zbývá na běžné dluhy, například půjčky, kreditní karty nebo nezaplacené faktury."
+                    titleTooltip={"Právně přesně: Jde o modelovou část měsíční srážky, která po odečtení zadaných prioritních položek, zejména odměny a hotových výdajů správce a běžného výživného, zbývá pro nezajištěné věřitele. Skutečný rozvrh může ovlivnit i další pohledávky a náklady řízení.\n\nLidsky řečeno: Orientačně tolik z vaší měsíční splátky zbývá na běžné dluhy, například půjčky, kreditní karty nebo nezaplacené faktury."}
                     value={results.proVeriteleJ} 
                     color="indigo" 
                     subtitle="Modelová částka po odečtení správce a zadaného běžného výživného."
@@ -1296,7 +1296,7 @@ const HlavniKalkulackaPage = () => {
                 <div className="grid sm:grid-cols-2 gap-4">
                   <AnalyticCard 
                     title="Celková měsíční srážka manželů" 
-                    titleTooltip="Srážka se vypočítá každému z manželů zvlášť. Tady vidíte jejich součet."
+                    titleTooltip={"Právně přesně: Srážka se vypočte samostatně z příjmu každého manžela podle pravidel oddlužení a následně se obě částky sečtou. Nejde o jednu srážku vypočtenou ze společného příjmu domácnosti.\n\nLidsky řečeno: Srážka se vypočítá každému z manželů zvlášť. Tady vidíte jejich součet."}
                     value={results.srazkaCelkemM} 
                     color="slate" 
                     subtitle="Součet samostatně vypočtených srážek obou manželů."
@@ -1325,7 +1325,7 @@ const HlavniKalkulackaPage = () => {
 
                   <AnalyticCard 
                     title="Orientačně pro nezajištěné věřitele" 
-                    titleTooltip="Orientačně tolik ze společné měsíční splátky zbývá na běžné dluhy manželů."
+                    titleTooltip={"Právně přesně: Jde o modelovou část součtu měsíčních srážek obou manželů, která po odečtení zadaných prioritních položek zbývá pro nezajištěné věřitele. Skutečné plnění může ovlivnit i další pohledávky a náklady řízení.\n\nLidsky řečeno: Orientačně tolik ze společné měsíční splátky zbývá na běžné dluhy manželů."}
                     value={results.proVeriteleM} 
                     color="indigo" 
                     subtitle="Společná částka k rozvrhu po odečtení priorit."
