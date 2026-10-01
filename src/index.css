@@ -129,6 +129,10 @@ body {
 .dashboard-content .desktop-calculator .shadow-sm, .dashboard-content .desktop-calculator .shadow-xl { box-shadow: 0 18px 45px rgba(0, 0, 0, .2) !important; }
 .dashboard-content .desktop-calculator button.bg-blue-600 { background: linear-gradient(135deg, #32bcd5, #5279ff) !important; color: #06162d !important; }
 
+.calculator-page {
+  background: transparent;
+}
+
 .mobile-calculator { display: none; }
 .desktop-calculator { display: block; }
 
@@ -162,6 +166,10 @@ body {
   .dashboard-content {
     width: 100%;
     overflow: visible;
+  }
+
+  .calculator-page {
+    background: #f8fafc;
   }
 
   .mobile-calculator {
@@ -201,6 +209,7 @@ body {
 }
 
 @media print {
+  .calculator-page { background: white !important; }
   .dashboard-topbar, .dashboard-sidebar { display: none; }
   .dashboard-shell, .dashboard-content { background: white !important; color: black !important; }
 }
