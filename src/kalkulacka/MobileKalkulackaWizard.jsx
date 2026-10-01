@@ -651,11 +651,11 @@ const MobileKalkulackaWizard = ({
   })()
 
   if (step === 'mode') {
-    return <div className="md:hidden min-h-[calc(100vh-2rem)] pb-6">{content}</div>
+    return <div className="md:hidden print:hidden min-h-[calc(100vh-2rem)] pb-6">{content}</div>
   }
 
   return (
-    <div className="md:hidden min-h-screen pb-24">
+    <div className="md:hidden print:hidden min-h-screen pb-24">
       <div className="mb-4">
         <div className="flex items-center justify-between gap-3">
           <button type="button" onClick={goBack} className="flex items-center gap-1 text-sm font-black text-blue-700">
