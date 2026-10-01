@@ -175,6 +175,38 @@ export function getMinimumInsolvencyPayment({
  * Do dlouhodobého modelu uspokojení věřitelů se započítají až tehdy,
  * pokud je aplikace bude umět evidovat jako skutečně pravidelné plnění.
  */
+export function calculateDebtorPromiseLimit({
+  retainedAfterStatutoryDeduction = 0,
+  basicNeeds = 0,
+  deficitAfterStatutoryDeduction = 0,
+  requestedPromise = 0,
+}) {
+  const retained = Math.max(0, Number(retainedAfterStatutoryDeduction) || 0)
+  const needs = Math.max(0, Number(basicNeeds) || 0)
+  const deficit = Math.max(0, Number(deficitAfterStatutoryDeduction) || 0)
+  const requested = Math.max(0, Number(requestedPromise) || 0)
+  const basicNeedsDeclared = needs > 0
+  const availableAboveBasicNeeds = basicNeedsDeclared
+    ? Math.max(0, retained - needs)
+    : 0
+  const maxDebtorPromise = basicNeedsDeclared
+    ? Math.min(deficit, availableAboveBasicNeeds)
+    : 0
+  const effectiveDebtorPromise = Math.min(requested, maxDebtorPromise)
+
+  return {
+    retainedAfterStatutoryDeduction: retained,
+    basicNeeds: needs,
+    basicNeedsDeclared,
+    availableAboveBasicNeeds,
+    deficitAfterStatutoryDeduction: deficit,
+    maxDebtorPromise,
+    requestedDebtorPromise: requested,
+    effectiveDebtorPromise,
+    promiseWasLimited: requested > effectiveDebtorPromise,
+  }
+}
+
 export function calculateMinimumPaymentCoverage({
   statutoryDeduction = 0,
   requiredMinimum = 0,
