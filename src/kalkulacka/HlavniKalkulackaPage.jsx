@@ -12,7 +12,12 @@ const Tooltip = ({ children, text }) => {
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="group relative flex items-center gap-1.5 w-fit">
+    <div
+      className="group relative flex items-center gap-1.5 w-fit"
+      onBlurCapture={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false);
+      }}
+    >
       {children}
       <button
         type="button"
