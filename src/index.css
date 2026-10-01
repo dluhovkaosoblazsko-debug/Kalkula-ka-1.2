@@ -160,3 +160,155 @@ body {
   .dashboard-topbar, .dashboard-sidebar { display: none; }
   .dashboard-shell, .dashboard-content { background: white !important; color: black !important; }
 }
+
+
+.calculation-print-report {
+  display: none;
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 14mm;
+  }
+
+  html,
+  body,
+  #root {
+    height: auto;
+    background: #fff !important;
+    color: #111 !important;
+  }
+
+  .calculation-print-report {
+    display: block !important;
+    width: 100%;
+    color: #111 !important;
+    background: #fff !important;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 10.5pt;
+    line-height: 1.35;
+  }
+
+  .calculation-print-report * {
+    color: inherit !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .report-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #111;
+    margin-bottom: 14px;
+  }
+
+  .report-header h1 {
+    margin: 2px 0 0;
+    font-size: 20pt;
+    line-height: 1.05;
+  }
+
+  .report-header h2 {
+    margin: 5px 0 0;
+    font-size: 12pt;
+    font-weight: 700;
+  }
+
+  .report-kicker {
+    margin: 0;
+    font-size: 8.5pt;
+    font-weight: 700;
+    letter-spacing: .05em;
+  }
+
+  .report-meta {
+    white-space: nowrap;
+    font-size: 8.5pt;
+    color: #444 !important;
+  }
+
+  .report-section {
+    margin: 0 0 14px;
+    break-inside: avoid-page;
+  }
+
+  .report-section h3 {
+    margin: 0 0 8px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid #777;
+    font-size: 12pt;
+  }
+
+  .report-section h4,
+  .report-subsection h4 {
+    margin: 7px 0 5px;
+    font-size: 10.5pt;
+  }
+
+  .report-subsection {
+    margin-bottom: 8px;
+  }
+
+  .report-income-row,
+  .report-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+    align-items: baseline;
+    padding: 3px 0;
+    border-bottom: 1px dotted #ccc;
+  }
+
+  .report-income-row small {
+    grid-column: 1 / -1;
+    font-size: 8.5pt;
+    color: #555 !important;
+  }
+
+  .report-row-strong {
+    font-weight: 700;
+    border-bottom-color: #777;
+  }
+
+  .report-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 18px;
+    row-gap: 0;
+  }
+
+  .report-two-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+  }
+
+  .report-steps {
+    margin: 6px 0 10px;
+    padding-left: 20px;
+  }
+
+  .report-steps li {
+    margin: 0 0 4px;
+  }
+
+  .report-formula {
+    margin-top: 8px;
+  }
+
+  .report-footer {
+    margin-top: 16px;
+    padding-top: 8px;
+    border-top: 1px solid #777;
+    font-size: 8.5pt;
+    color: #444 !important;
+  }
+
+  .report-footer p {
+    margin: 0;
+  }
+}
