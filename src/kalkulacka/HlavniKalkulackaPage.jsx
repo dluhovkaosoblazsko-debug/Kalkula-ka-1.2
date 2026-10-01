@@ -685,7 +685,7 @@ const HlavniKalkulackaPage = () => {
         formatKc={formatKc}
       />
 
-      <div className="hidden md:block max-w-6xl mx-auto">
+      <div className="hidden md:block print:block max-w-6xl mx-auto">
         <header className="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200 pb-4 print:pb-2">
           <div>
             <div className="flex flex-wrap items-center gap-2 mb-2 print:hidden">
