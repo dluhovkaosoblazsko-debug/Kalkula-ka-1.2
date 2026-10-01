@@ -1459,9 +1459,9 @@ const HlavniKalkulackaPage = () => {
                   </div>
 
                   {/* VÝUKOVÝ MATEMATICKÝ BLOK - EXEKUCE */}
-                  <div className="mt-5 pt-4 border-t border-slate-100">
-                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-2">Matematický postup výpočtu:</p>
-                    <div className="space-y-1.5 text-[10px] text-slate-600 font-mono bg-slate-50 p-3 rounded border border-slate-100 overflow-x-auto whitespace-nowrap">
+                  <details className="mt-5 pt-4 border-t border-slate-100">
+                    <summary className="cursor-pointer text-sm font-black text-slate-700">Jak jsme k výsledku došli?</summary>
+                    <div className="mt-3 space-y-1.5 text-[10px] text-slate-600 font-mono bg-slate-50 p-3 rounded border border-slate-100 overflow-x-auto whitespace-nowrap">
                       {renderMathStep1(results.ex, params)}
                       <p>2. <strong className="text-slate-700">Část příjmu nad nezabavitelnou částku:</strong> {results.ex.prijemPredSrazkou.toLocaleString()} (Příjem) - {results.ex.legalniMinimum.toLocaleString()} (Nezabavitelná částka) = {Math.max(0, results.ex.zbytekMzdyRaw).toLocaleString()} Kč</p>
                       {results.ex.zbytekMzdyRaw > 0 && (
@@ -1472,7 +1472,7 @@ const HlavniKalkulackaPage = () => {
                         </>
                       )}
                     </div>
-                  </div>
+                  </details>
                 </div>
               </div>
             )}
@@ -1722,9 +1722,11 @@ const HlavniKalkulackaPage = () => {
               </div>
             )}
 
-            <div className="mt-8 p-4 bg-slate-100 rounded-xl border border-slate-200 text-[10px] text-slate-500 leading-relaxed print:text-black print:border-none print:bg-transparent">
-              <strong>Doložka k výsledku:</strong> Kalkulačka pracuje s právním stavem pro příjmy vyplácené v roce 2026 a poskytuje orientační výsledek. U exekucí nerozpočítává pořadí několika souběžných pohledávek mezi jednotlivé věřitele. Při více plátcích je přesný výpočet možný pouze tehdy, jsou-li zadány části nezabavitelné částky určené jednotlivým plátcům; bez nich je výsledek označen jako orientační. U oddlužení je míra uspokojení modelová a nezohledňuje všechny náklady řízení, budoucí změny příjmů ani všechny další prioritní pohledávky. Kalkulačka neposuzuje skutečnou udržitelnost závazného příslibu, platnost závazku třetí osoby ani to, zda soud oddlužení povolí nebo schválí.
-            </div>
+            {activeTab !== 'nastaveni' && hasActiveIncome && (
+              <div className="mt-8 p-4 bg-slate-100 rounded-xl border border-slate-200 text-[10px] text-slate-500 leading-relaxed print:text-black print:border-none print:bg-transparent">
+                <strong>Doložka k výsledku:</strong> Kalkulačka pracuje s právním stavem pro příjmy vyplácené v roce 2026 a poskytuje orientační výsledek. U exekucí nerozpočítává pořadí několika souběžných pohledávek mezi jednotlivé věřitele. Při více plátcích je přesný výpočet možný pouze tehdy, jsou-li zadány části nezabavitelné částky určené jednotlivým plátcům; bez nich je výsledek označen jako orientační. U oddlužení je míra uspokojení modelová a nezohledňuje všechny náklady řízení, budoucí změny příjmů ani všechny další prioritní pohledávky. Kalkulačka neposuzuje skutečnou udržitelnost závazného příslibu, platnost závazku třetí osoby ani to, zda soud oddlužení povolí nebo schválí.
+              </div>
+            )}
           </main>
         </div>
         )}
