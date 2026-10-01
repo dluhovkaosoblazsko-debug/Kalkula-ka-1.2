@@ -6,6 +6,8 @@ import {
 import { DEFAULT_2026_PARAMS, calculateCreditorSatisfaction, calculateDebtorPromiseLimit, calculateMinimumPaymentCoverage, calculateWageDeduction, getMinimumInsolvencyPayment } from '../lib/calculations2026';
 import MobileKalkulackaWizard from './MobileKalkulackaWizard';
 import PrintableCalculationReport from './PrintableCalculationReport';
+import DesktopSpousesForm from './DesktopSpousesForm';
+import { optionalFieldIsOpen, spouseIncomeState, spouseFamilyErrors } from './progressiveSpouses';
 
 // --- POMOCNÁ KOMPONENTA PRO VYSVĚTLIVKY ---
 const Tooltip = ({ children, text }) => {
@@ -117,7 +119,7 @@ const hasQualifyingPension = (sources = []) => sources.some((source) =>
 
 const sumIncomeSources = (sources = []) => sources.reduce((sum, source) => sum + Math.max(0, Number(source.castka) || 0), 0);
 
-const IncomeSourcesEditor = ({ sources, multiplePayers, onSourcesChange, onMultiplePayersChange, label }) => {
+const IncomeSourcesEditor = ({ sources, multiplePayers, onSourcesChange, onMultiplePayersChange, label, idPrefix = 'desktop' }) => {
   const safeSources = Array.isArray(sources) && sources.length ? sources : [{ id: 'income-1', typ: 'mzda', castka: 0, pridelenaNezabavitelna: '' }];
 
   const updateSource = (id, patch) => {
@@ -144,26 +146,26 @@ const IncomeSourcesEditor = ({ sources, multiplePayers, onSourcesChange, onMulti
           <div className="grid gap-2 sm:grid-cols-[1.4fr_1fr_auto] items-end">
             <div>
               <Tooltip text="Vyberte, o jaký příjem jde. Kalkulačka podle typu příjmu pozná, jaká pravidla má při výpočtu použít – například u některých druhů důchodů.">
-                <label htmlFor={`${source.id}-typ`} className="block text-[9px] font-bold text-slate-500 mb-1 w-fit cursor-help border-b border-dotted border-slate-400">Typ příjmu</label>
+                <label htmlFor={`${idPrefix}-${source.id}-typ`} className="block text-[9px] font-bold text-slate-500 mb-1 w-fit cursor-help border-b border-dotted border-slate-400">Typ příjmu</label>
               </Tooltip>
-              <select id={`${source.id}-typ`} value={source.typ} onChange={(e) => updateSource(source.id, { typ: e.target.value })} className="w-full p-2 bg-white border border-slate-300 rounded-lg font-semibold text-xs">
+              <select id={`${idPrefix}-${source.id}-typ`} value={source.typ} onChange={(e) => updateSource(source.id, { typ: e.target.value })} className="w-full p-2 bg-white border border-slate-300 rounded-lg font-semibold text-xs">
                 {INCOME_TYPES.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
               </select>
             </div>
             <div>
               <Tooltip text={"Právně přesně: Zadejte čistou měsíční částku před provedením exekuční nebo insolvenční srážky. U mzdy jde o částku po odečtení daně a povinného pojistného; u důchodu nebo jiné dávky o měsíční částku před srážkou.\n\nLidsky řečeno: Zadejte částku, kterou byste dostali, kdyby vám z ní nebyly strhávány peníze kvůli dluhům."}>
-                <label htmlFor={`${source.id}-castka`} className="block text-[9px] font-bold text-slate-500 mb-1 w-fit cursor-help border-b border-dotted border-slate-400">Čistá měsíční částka (Kč)</label>
+                <label htmlFor={`${idPrefix}-${source.id}-castka`} className="block text-[9px] font-bold text-slate-500 mb-1 w-fit cursor-help border-b border-dotted border-slate-400">Čistá měsíční částka (Kč)</label>
               </Tooltip>
-              <input id={`${source.id}-castka`} type="number" onFocus={selectZeroOnFocus} onClick={selectZeroOnFocus} min="0" value={source.castka ?? ''} onChange={(e) => updateSource(source.id, { castka: Math.max(0, Number(e.target.value) || 0) })} className="w-full p-2 bg-white border border-slate-300 rounded-lg font-bold text-sm" />
+              <input id={`${idPrefix}-${source.id}-castka`} type="number" onFocus={selectZeroOnFocus} onClick={selectZeroOnFocus} min="0" value={source.castka ?? ''} onChange={(e) => updateSource(source.id, { castka: Math.max(0, Number(e.target.value) || 0) })} className="w-full p-2 bg-white border border-slate-300 rounded-lg font-bold text-sm" />
             </div>
             <button type="button" onClick={() => removeSource(source.id)} disabled={safeSources.length <= 1} className="px-2 py-2 text-[10px] font-bold text-slate-500 disabled:opacity-30 hover:text-red-600">Odebrat</button>
           </div>
           {multiplePayers && safeSources.length > 1 && (
             <div className="mt-2">
               <Tooltip text={"Právně přesně: Pokud srážky provádí několik plátců současně, určí se, jakou část nezabavitelné částky má každý z nich ponechat. Pro přesný výpočet zadejte částku přidělenou právě tomuto plátci; součet má odpovídat celkové nezabavitelné částce.\n\nLidsky řečeno: Pokud příjem dostáváte od více plátců, například od zaměstnavatele a ČSSZ, nezabavitelná částka se mezi ně rozdělí. Zadejte částku, kterou vám má ponechat tento plátce."}>
-                <label htmlFor={`${source.id}-nezabavitelna`} className="block text-[9px] font-bold text-amber-700 mb-1 border-b border-dotted border-amber-500">Nezabavitelná částka přidělená tomuto plátci (Kč)</label>
+                <label htmlFor={`${idPrefix}-${source.id}-nezabavitelna`} className="block text-[9px] font-bold text-amber-700 mb-1 border-b border-dotted border-amber-500">Nezabavitelná částka přidělená tomuto plátci (Kč)</label>
               </Tooltip>
-              <input id={`${source.id}-nezabavitelna`} type="number" onFocus={selectZeroOnFocus} onClick={selectZeroOnFocus} min="0" value={source.pridelenaNezabavitelna ?? ''} onChange={(e) => updateSource(source.id, { pridelenaNezabavitelna: e.target.value === '' ? '' : Math.max(0, Number(e.target.value) || 0) })} className="w-full p-2 bg-amber-50 border border-amber-200 rounded-lg font-bold text-sm text-amber-900" placeholder="Podle rozhodnutí / pokynu plátci" />
+              <input id={`${idPrefix}-${source.id}-nezabavitelna`} type="number" onFocus={selectZeroOnFocus} onClick={selectZeroOnFocus} min="0" value={source.pridelenaNezabavitelna ?? ''} onChange={(e) => updateSource(source.id, { pridelenaNezabavitelna: e.target.value === '' ? '' : Math.max(0, Number(e.target.value) || 0) })} className="w-full p-2 bg-amber-50 border border-amber-200 rounded-lg font-bold text-sm text-amber-900" placeholder="Podle rozhodnutí / pokynu plátci" />
             </div>
           )}
         </div>
@@ -819,7 +821,7 @@ const HlavniKalkulackaPage = () => {
   };
 
   const handleIncomeSourcesChange = (person, sources) => {
-    setData((prev) => ({ ...prev, [`prijmy${person}`]: sources }));
+    setData((prev) => ({ ...prev, [`prijmy${person}`]: sources, [`desktopManzeleBezPrijmu${person}`]: false }));
   };
 
   const handleMultiplePayersChange = (person, checked) => {
@@ -897,8 +899,11 @@ const HlavniKalkulackaPage = () => {
     setActiveTab('nastaveni');
   };
 
+  const spouseIncome = spouseIncomeState(data, results);
+  const spouseErrors = spouseFamilyErrors(data, results);
+  const hasSpouseErrors = Object.keys(spouseErrors).length > 0;
   const hasActiveIncome = activeTab === 'manzele'
-    ? (results.totalPrijem1 + results.totalPrijem2) > 0
+    ? spouseIncome.ready && !hasSpouseErrors
     : results.totalPrijem1 > 0;
 
   const handlePrint = () => window.print();
@@ -1066,34 +1071,21 @@ const HlavniKalkulackaPage = () => {
           {/* LEVÝ PANEL - Vstupy */}
           {activeTab !== 'nastaveni' && (
             <aside className="lg:col-span-5 space-y-4 print:hidden">
+              {activeTab === 'manzele' ? (
+                <DesktopSpousesForm
+                  data={data} setData={setData} results={results}
+                  IncomeSourcesEditor={IncomeSourcesEditor}
+                  handleIncomeSourcesChange={handleIncomeSourcesChange}
+                  handleMultiplePayersChange={handleMultiplePayersChange}
+                  dluhyNezajisteneDraft={dluhyNezajisteneDraft}
+                  setDluhyNezajisteneDraft={setDluhyNezajisteneDraft}
+                  commitDluhyNezajistene={commitDluhyNezajistene}
+                  setEditingDluhyNezajistene={setEditingDluhyNezajistene}
+                  formatKc={formatKc}
+                />
+              ) : (
+                <>
               
-              {/* SEKCE 1: RODINA (SPOLEČNÉ ÚDAJE) */}
-              {activeTab === 'manzele' && (
-              <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 space-y-3 border-t-4 border-t-indigo-400">
-                <h3 className="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-1 flex items-center gap-2">
-                  <Users size={14}/> 1. Společná situace rodiny
-                </h3>
-                
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Tooltip text={activeTab === 'manzele'
-                      ? 'Právně přesně: Společně vyživované dítě se při srážkách z příjmu obou manželů započítává do nezabavitelné částky každému z nich zvlášť.\n\nLidsky řečeno: Zadejte počet společných dětí, o které se spolu staráte. Kalkulačka je započítá každému z vás.'
-                      : 'Právně přesně: Společně vyživované dítě se u jednotlivce započítá jako vyživovaná osoba, pokud jsou splněny zákonné podmínky.\n\nLidsky řečeno: Zadejte počet dětí, o které se staráte.'}>
-                      <label htmlFor="spolecneDeti" className="block text-[10px] font-bold text-slate-600 mb-1 w-fit cursor-help border-b border-dotted border-slate-400">
-                        {activeTab === 'manzele' ? 'Společné děti' : 'Společné děti / děti ve společné péči'}
-                      </label>
-                    </Tooltip>
-                    <input type="number" onFocus={selectZeroOnFocus} onClick={selectZeroOnFocus} id="spolecneDeti" min="0" step="1" name="spolecneDeti" value={data.spolecneDeti} onChange={handleInputChange} className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg font-bold" />
-                    {activeTab !== 'manzele' && (
-                      <p className="mt-1 text-[9px] leading-snug text-slate-500">
-                        Tato hodnota se u jednotlivce také započítává do nezabavitelné částky.
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-              )}
-
               {/* SEKCE 2: DLUŽNÍK 1 */}
               <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 space-y-3 border-t-4 border-t-blue-400">
                 <h3 className="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-1 flex items-center gap-2">
@@ -1200,7 +1192,7 @@ const HlavniKalkulackaPage = () => {
                     <label className="flex items-start gap-2.5 rounded-lg border border-slate-200 bg-slate-50 p-3 cursor-pointer">
                       <input
                         type="checkbox"
-                        checked={Boolean(data.desktopJednotlivecMaVyzivovaneOsoby)}
+                        checked={optionalFieldIsOpen(data, 'vyzivovaneOsoby1')}
                         onChange={(event) => handleDesktopProgressiveToggle(
                           'desktopJednotlivecMaVyzivovaneOsoby',
                           event.target.checked,
@@ -1218,7 +1210,7 @@ const HlavniKalkulackaPage = () => {
                       </span>
                     </label>
 
-                    {data.desktopJednotlivecMaVyzivovaneOsoby && (
+                    {optionalFieldIsOpen(data, 'vyzivovaneOsoby1') && (
                       <div className="space-y-3 pl-1">
                         <div>
                           <Tooltip text={"Právně přesně: Uveďte osoby, kterým jste povinen/povinna poskytovat výživné. Za každou započitatelnou osobu se zvyšuje nezabavitelná částka o jednu čtvrtinu základní nezabavitelné částky. Manžela/partnera sem nepočítejte; ten má zvláštní pravidlo.\n\nLidsky řečeno: Zadejte počet dětí a dalších osob, které vyživujete. Manžela nebo partnera sem nepočítejte."}>
@@ -1243,7 +1235,7 @@ const HlavniKalkulackaPage = () => {
                             <label className="flex items-start gap-2.5 rounded-lg border border-amber-200 bg-amber-50 p-3 cursor-pointer">
                               <input
                                 type="checkbox"
-                                checked={Boolean(data.desktopJednotlivecMaVymahaneVyzivne)}
+                                checked={optionalFieldIsOpen(data, 'osobySVykonemProVyzivne1')}
                                 onChange={(event) => handleDesktopProgressiveToggle(
                                   'desktopJednotlivecMaVymahaneVyzivne',
                                   event.target.checked,
@@ -1256,7 +1248,7 @@ const HlavniKalkulackaPage = () => {
                               </span>
                             </label>
 
-                            {data.desktopJednotlivecMaVymahaneVyzivne && (
+                            {optionalFieldIsOpen(data, 'osobySVykonemProVyzivne1') && (
                               <div>
                                 <Tooltip text={"Právně přesně: Jedna čtvrtina nezabavitelné částky se nezapočítá na osobu, v jejíž prospěch byl nařízen výkon rozhodnutí nebo exekuce pro výživné, pokud toto vymáhání stále trvá.\n\nLidsky řečeno: Uveďte počet vyživovaných osob, na které proti vám právě běží vymáhání výživného."}>
                                   <label htmlFor="osobySVykonemProVyzivne1" className="block text-[10px] font-bold text-amber-700 mb-1 w-fit cursor-help border-b border-dotted border-amber-600">Kolika osob se vymáhané výživné týká?</label>
@@ -1317,7 +1309,7 @@ const HlavniKalkulackaPage = () => {
                     <label className="flex items-start gap-2.5 rounded-lg border border-slate-200 bg-slate-50 p-3 cursor-pointer">
                       <input
                         type="checkbox"
-                        checked={Boolean(data.desktopJednotlivecPlatiVyzivne)}
+                        checked={optionalFieldIsOpen(data, 'bezneMesicniVyzivne1')}
                         onChange={(event) => handleDesktopProgressiveToggle(
                           'desktopJednotlivecPlatiVyzivne',
                           event.target.checked,
@@ -1331,7 +1323,7 @@ const HlavniKalkulackaPage = () => {
                       </span>
                     </label>
 
-                    {data.desktopJednotlivecPlatiVyzivne && (
+                    {optionalFieldIsOpen(data, 'bezneMesicniVyzivne1') && (
                       <div>
                         <Tooltip text={"Právně přesně: Uveďte běžné zákonné výživné, které máte během oddlužení pravidelně hradit. Tato pohledávka se hradí před nezajištěnými věřiteli a ovlivňuje i minimální částku potřebnou pro oddlužení.\n\nLidsky řečeno: Uveďte měsíční výživné, které pravidelně platíte."}>
                           <label htmlFor="bezneMesicniVyzivne1" className="block text-[10px] font-bold text-red-600 mb-1 w-fit cursor-help border-b border-dotted border-red-400">Kolik měsíčně platíte? (Kč)</label>
@@ -1343,7 +1335,7 @@ const HlavniKalkulackaPage = () => {
                     <label className="flex items-start gap-2.5 rounded-lg border border-slate-200 bg-slate-50 p-3 cursor-pointer">
                       <input
                         type="checkbox"
-                        checked={Boolean(data.desktopJednotlivecMaChranenePrijmy)}
+                        checked={optionalFieldIsOpen(data, 'chranenePrijmy1')}
                         onChange={(event) => handleDesktopProgressiveToggle(
                           'desktopJednotlivecMaChranenePrijmy',
                           event.target.checked,
@@ -1357,7 +1349,7 @@ const HlavniKalkulackaPage = () => {
                       </span>
                     </label>
 
-                    {data.desktopJednotlivecMaChranenePrijmy && (
+                    {optionalFieldIsOpen(data, 'chranenePrijmy1') && (
                       <div>
                         <Tooltip text={"Právně přesně: Uveďte pouze příjmy, z nichž se podle pravidel srážek ze mzdy a jiných příjmů srážka neprovádí. Důchod, nemocenské, peněžitá pomoc v mateřství, podpora v nezaměstnanosti ani DPP/DPČ sem obecně nepatří.\n\nLidsky řečeno: Sem patří například příspěvek na péči, dávky pro osoby se zdravotním postižením, náhradní výživné, daňový bonus nebo výživné na dítě."}>
                           <label htmlFor="chranenePrijmy1" className="block text-[10px] font-bold text-green-700 mb-1 w-fit cursor-help border-b border-dotted border-green-500">Kolik měsíčně dostáváte? (Kč)</label>
@@ -1367,63 +1359,6 @@ const HlavniKalkulackaPage = () => {
                     )}
                   </div>
                 </>
-              )}
-
-              {/* SEKCE 3: DLUŽNÍK 2 (JEN PRO MANŽELE) */}
-              {activeTab === 'manzele' && (
-                <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 space-y-3 border-t-4 border-t-purple-400">
-                  <h3 className="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-1 flex items-center gap-2">
-                    <User size={14}/> 3. Příjmy a status: Manžel B
-                  </h3>
-                  
-                  <IncomeSourcesEditor
-                    sources={data.prijmy2}
-                    multiplePayers={Boolean(data.vicePlatcu2)}
-                    onSourcesChange={(sources) => handleIncomeSourcesChange(2, sources)}
-                    onMultiplePayersChange={(checked) => handleMultiplePayersChange(2, checked)}
-                    label="Postižitelné měsíční příjmy"
-                  />
-                  {data.vicePlatcu2 && results.insM_B.multiPayerNeedsAllocation && (
-                    <div className="p-3 bg-amber-50 rounded-lg border border-amber-200 text-[10px] text-amber-900 leading-snug">
-                      <strong>Pro přesný výpočet více plátců chybí rozdělení nezabavitelné částky.</strong> Součet přidělených částí má odpovídat {formatKc(results.insM_B.legalniMinimum)}.
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-2 gap-3 pt-2">
-                    <div>
-                      <Tooltip text={"Právně přesně: Uveďte další osoby, kterým je druhý dlužník povinen poskytovat výživné a které nejsou zahrnuty mezi společně vyživované děti. Za každou započitatelnou osobu se zvyšuje jeho nezabavitelná částka o jednu čtvrtinu základní nezabavitelné částky.\n\nLidsky řečeno: Uveďte další osoby, které tento manžel vyživuje, například děti z předchozího vztahu. Společné děti sem už nepočítejte."}>
-                        <label htmlFor="vyzivovaneOsoby2" className="block text-[10px] font-bold text-slate-600 mb-1 w-fit cursor-help border-b border-dotted border-slate-400">Další vyživované osoby tohoto dlužníka</label>
-                      </Tooltip>
-                      <input type="number" onFocus={selectZeroOnFocus} onClick={selectZeroOnFocus} id="vyzivovaneOsoby2" min="0" step="1" name="vyzivovaneOsoby2" value={data.vyzivovaneOsoby2} onChange={handleInputChange} className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg font-bold text-sm" />
-                    </div>
-                    <div>
-                      <Tooltip text={"Právně přesně: Uveďte počet vyživovaných osob druhého dlužníka, v jejichž prospěch právě trvá výkon rozhodnutí nebo exekuce pro výživné. Na takovou osobu se jedna čtvrtina nezabavitelné částky nezapočítává.\n\nLidsky řečeno: Pokud tento manžel dluží na výživném a kvůli tomu proti němu běží exekuce, osoba, na kterou výživné dluží, se mu do nezabavitelné částky nezapočítá."}>
-                        <label htmlFor="osobySVykonemProVyzivne2" className="block text-[10px] font-bold text-amber-700 mb-1 w-fit cursor-help border-b border-dotted border-amber-600">Z toho osoby s vymáhaným výživným</label>
-                      </Tooltip>
-                      <input type="number" onFocus={selectZeroOnFocus} onClick={selectZeroOnFocus} id="osobySVykonemProVyzivne2" min="0" step="1" name="osobySVykonemProVyzivne2" value={data.osobySVykonemProVyzivne2} onChange={handleInputChange} max={data.spolecneDeti + data.vyzivovaneOsoby2 + (results.insM_B?.partnerZapocitan ? 1 : 0)} className="w-full p-2 bg-amber-50 border border-amber-200 rounded-lg font-bold text-amber-900 text-sm" />
-                    </div>
-                  </div>
-
-                  {results.duchodPovinny2 && (
-                    <div className="p-2.5 bg-purple-50 rounded-lg border border-purple-100 text-[10px] text-purple-800 leading-relaxed space-y-1">
-                      <p><strong>Rozpoznán rozhodný důchod – právně přesně:</strong> Kalkulačka jej automaticky použije při posouzení zvláštních pravidel srážek a při započtení manžela/partnera do nezabavitelné částky.</p>
-                      <p><strong>Lidsky řečeno:</strong> Zadaný důchod ovlivňuje výpočet srážky a může zvýšit nezabavitelnou částku druhého manžela.</p>
-                    </div>
-                  )}
-
-                  <div className="pt-2 border-t border-slate-100">
-                    <Tooltip text={"Právně přesně: Uveďte běžné zákonné výživné druhého manžela hrazené během oddlužení. Hradí se před nezajištěnými věřiteli a zvyšuje potřebné minimální měsíční plnění.\n\nLidsky řečeno: Pokud druhý manžel pravidelně platí alimenty, napište je sem. Tyto peníze se v oddlužení hradí před běžnými nezajištěnými dluhy."}>
-                      <label htmlFor="bezneMesicniVyzivne2" className="block text-[10px] font-bold text-red-600 mb-1 w-fit cursor-help border-b border-dotted border-red-400">Běžné zákonné výživné hrazené během oddlužení (M2, Kč)</label>
-                    </Tooltip>
-                    <input type="number" onFocus={selectZeroOnFocus} onClick={selectZeroOnFocus} id="bezneMesicniVyzivne2" min="0" name="bezneMesicniVyzivne2" value={data.bezneMesicniVyzivne2} onChange={handleInputChange} className="w-full p-2 bg-red-50 border border-red-200 rounded-lg outline-none font-bold text-red-800 text-sm" />
-                  </div>
-                  <div className="pt-2 border-t border-slate-100">
-                    <Tooltip text={"Právně přesně: Uveďte pouze příjmy druhého manžela, z nichž se podle pravidel srážek ze mzdy a jiných příjmů srážka neprovádí. Kalkulačka právní povahu konkrétního příjmu sama neověřuje.\n\nLidsky řečeno: Sem patří například příspěvek na péči, dávky pro osoby se zdravotním postižením, náhradní výživné, daňový bonus nebo výživné na dítě. Důchod, nemocenská, mateřská ani podpora v nezaměstnanosti sem nepatří."}>
-                      <label htmlFor="chranenePrijmy2" className="block text-[10px] font-bold text-green-700 mb-1 w-fit cursor-help border-b border-dotted border-green-500">Jiné příjmy chráněné před srážkami (Kč)</label>
-                    </Tooltip>
-                    <input type="number" onFocus={selectZeroOnFocus} onClick={selectZeroOnFocus} min="0" id="chranenePrijmy2" name="chranenePrijmy2" value={data.chranenePrijmy2} onChange={handleInputChange} className="w-full p-2 bg-green-50 border border-green-200 rounded-lg outline-none font-bold text-green-900 text-sm" />
-                  </div>
-                </div>
               )}
 
               {/* SEKCE 4: PARAMETRY ŘÍZENÍ A DLUHŮ */}
@@ -1508,7 +1443,7 @@ const HlavniKalkulackaPage = () => {
                         <label className="flex items-start gap-2.5 rounded-lg border border-slate-200 bg-slate-50 p-3 cursor-pointer">
                           <input
                             type="checkbox"
-                            checked={Boolean(data.desktopJednotlivecProdejMajetku)}
+                            checked={optionalFieldIsOpen(data, 'vytezekZpenezeni')}
                             onChange={(event) => handleDesktopProgressiveToggle(
                               'desktopJednotlivecProdejMajetku',
                               event.target.checked,
@@ -1522,7 +1457,7 @@ const HlavniKalkulackaPage = () => {
                           </span>
                         </label>
 
-                        {data.desktopJednotlivecProdejMajetku && (
+                        {optionalFieldIsOpen(data, 'vytezekZpenezeni') && (
                           <div>
                             <Tooltip text={"Právně přesně: Zadejte odhad částky, která po případném zpeněžení majetku a souvisejících nákladech skutečně připadne nezajištěným věřitelům.\n\nLidsky řečeno: Odhadněte, kolik peněz z prodeje majetku skutečně půjde na dluhy."}>
                               <label htmlFor="vytezekZpenezeni" className="block text-[10px] font-bold text-green-700 mb-1 w-fit cursor-help border-b border-dotted border-green-500">Odhad peněz z prodeje majetku (Kč)</label>
@@ -1534,7 +1469,7 @@ const HlavniKalkulackaPage = () => {
                         <label className="flex items-start gap-2.5 rounded-lg border border-slate-200 bg-slate-50 p-3 cursor-pointer">
                           <input
                             type="checkbox"
-                            checked={Boolean(data.desktopJednotlivecMaZajisteneDluhy)}
+                            checked={optionalFieldIsOpen(data, 'dluhyZajistene')}
                             onChange={(event) => handleDesktopProgressiveToggle(
                               'desktopJednotlivecMaZajisteneDluhy',
                               event.target.checked,
@@ -1548,7 +1483,7 @@ const HlavniKalkulackaPage = () => {
                           </span>
                         </label>
 
-                        {data.desktopJednotlivecMaZajisteneDluhy && (
+                        {optionalFieldIsOpen(data, 'dluhyZajistene') && (
                           <div>
                             <Tooltip text={"Právně přesně: Zajištěný věřitel se v rozsahu zajištění uspokojuje ze zpeněžení majetku, kterým je jeho pohledávka zajištěna.\n\nLidsky řečeno: Uveďte přibližnou výši dluhů, za které ručíte konkrétním majetkem."}>
                               <label htmlFor="dluhyZajistene" className="block text-[10px] font-bold text-slate-600 mb-1 w-fit cursor-help border-b border-dotted border-slate-400">Výše zajištěných dluhů (Kč)</label>
@@ -1560,7 +1495,7 @@ const HlavniKalkulackaPage = () => {
                         <label className="flex items-start gap-2.5 rounded-lg border border-slate-200 bg-slate-50 p-3 cursor-pointer">
                           <input
                             type="checkbox"
-                            checked={Boolean(data.desktopJednotlivecMaNeosvoboditelneDluhy)}
+                            checked={optionalFieldIsOpen(data, 'dluhyNeosvoboditelne')}
                             onChange={(event) => handleDesktopProgressiveToggle(
                               'desktopJednotlivecMaNeosvoboditelneDluhy',
                               event.target.checked,
@@ -1574,7 +1509,7 @@ const HlavniKalkulackaPage = () => {
                           </span>
                         </label>
 
-                        {data.desktopJednotlivecMaNeosvoboditelneDluhy && (
+                        {optionalFieldIsOpen(data, 'dluhyNeosvoboditelne') && (
                           <div>
                             <Tooltip text={"Právně přesně: Osvobození se nedotýká některých pohledávek, například zákonného výživného, náhrady škody způsobené na zdraví nebo některých škod způsobených úmyslně.\n\nLidsky řečeno: Uveďte přibližnou výši dluhů, které mohou zůstat i po úspěšném oddlužení."}>
                               <label htmlFor="dluhyNeosvoboditelne" className="block text-[10px] font-bold text-slate-600 mb-1 w-fit cursor-help border-b border-dotted border-slate-400">Výše těchto dluhů (Kč)</label>
@@ -1601,6 +1536,8 @@ const HlavniKalkulackaPage = () => {
                     )}
                   </div>
                 )
+              )}
+                </>
               )}
             </aside>
           )}
@@ -1658,9 +1595,17 @@ const HlavniKalkulackaPage = () => {
             {activeTab !== 'nastaveni' && !hasActiveIncome && (
               <div className="rounded-2xl border border-blue-200 bg-blue-50 p-6 shadow-sm">
                 <p className="text-xs font-black uppercase tracking-widest text-blue-700">Výsledek</p>
-                <h2 className="mt-2 text-xl font-black text-slate-900">Výsledek se zobrazí po zadání příjmu.</h2>
+                <h2 className="mt-2 text-xl font-black text-slate-900">
+                  {activeTab === 'manzele'
+                    ? (hasSpouseErrors ? 'Zkontrolujte rodinné údaje.' : 'Doplňte příjmy obou manželů.')
+                    : 'Výsledek se zobrazí po zadání příjmu.'}
+                </h2>
                 <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                  Začněte vlevo zadáním čistého měsíčního příjmu. Teprve potom kalkulačka zobrazí srážku, zůstatek a případnou kontrolu minima.
+                  {activeTab === 'manzele'
+                    ? (hasSpouseErrors
+                      ? 'Opravte nesoulad v počtu osob s vymáhaným výživným. U příslušného pole vlevo je uvedeno, co je potřeba změnit.'
+                      : 'U každého manžela zadejte čistý měsíční příjem, nebo výslovně potvrďte, že postižitelný příjem nemá. Potom se zobrazí společný výsledek.')
+                    : 'Začněte vlevo zadáním čistého měsíčního příjmu. Teprve potom kalkulačka zobrazí srážku, zůstatek a případnou kontrolu minima.'}
                 </p>
               </div>
             )}
@@ -1668,7 +1613,7 @@ const HlavniKalkulackaPage = () => {
             {activeTab !== 'nastaveni' && hasActiveIncome && (
               <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
                 <p className="text-xs font-black uppercase tracking-widest text-blue-700">
-                  {activeTab === 'nezabavitelna' ? '3. Výsledek' : '5. Výsledek'}
+                  {activeTab === 'nezabavitelna' ? '3. Výsledek' : activeTab === 'manzele' ? '6. Výsledek' : '5. Výsledek'}
                 </p>
               </div>
             )}

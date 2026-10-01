@@ -1,0 +1,44 @@
+name: Kontrola kalkulacky
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install dependencies without desktop installers
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Existing reference calculations
+        run: npm run verify
+      - name: Progressive form scenarios and server rendering
+        run: node scripts/verifyProgressiveSpouses.mjs --render
+      - name: Production build
+        run: npm run build
+      - name: Record tested revision
+        run: git rev-parse HEAD > dist/build-commit.txt
+      - name: Save verified build for review
+        uses: actions/upload-artifact@v7
+        with:
+          name: verified-calculator
+          retention-days: 7
+          if-no-files-found: error
+          path: |
+            dist/
+            src/
+            scripts/
+            package.json
+            package-lock.json
+            vite.config.js
+            index.html
