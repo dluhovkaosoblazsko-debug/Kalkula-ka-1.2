@@ -1,6 +1,10 @@
 import React from 'react'
 
-const formatKc = (value) => `${Math.round(Math.max(0, Number(value) || 0)).toLocaleString('cs-CZ')} Kč`
+import { DEFAULT_2026_PARAMS } from '../lib/calculations2026.js'
+import { caseStatus, formatKc, MODEL_NOTE, EXECUTION_NOTE, present } from './caseState.js'
+import { percentageText } from './CaseResults'
+import CalculationSteps from './CalculationBreakdown'
+import { groupPayers } from './calculateCase.js'
 
 const INCOME_LABELS = {
   mzda: 'Mzda / plat',
@@ -28,54 +32,23 @@ const Row = ({ label, value, strong = false }) => (
   </div>
 )
 
-const IncomeRows = ({ title, sources = [], multiplePayers = false }) => (
-  <div className="report-subsection">
+const IncomeRows = ({ title, sources = [], multiplePayers = false }) => {
+  const rows = Array.isArray(sources) ? sources : [];
+  const groups = multiplePayers ? groupPayers(rows) : [{id: 'all', source: rows[0], sources: rows}];
+  return <div className="report-subsection">
     <h4>{title}</h4>
-    {(Array.isArray(sources) ? sources : []).map((source, index) => (
-      <div className="report-income-row" key={source.id || `${title}-${index}`}>
-        <span>{INCOME_LABELS[source.typ] || 'Příjem'} {index + 1}</span>
-        <strong>{formatKc(source.castka)}</strong>
-        {multiplePayers && source.pridelenaNezabavitelna !== '' && source.pridelenaNezabavitelna !== undefined && (
-          <small>Nezabavitelná částka u plátce: {formatKc(source.pridelenaNezabavitelna)}</small>
-        )}
-      </div>
-    ))}
-  </div>
-)
-
-const CalculationSteps = ({ result, insolvency = false }) => {
-  const thirdsMultiplier = insolvency || result.forceTwoThirds ? 2 : 1
-  return (
-    <ol className="report-steps">
-      <li>
-        Nezabavitelná částka: <strong>{formatKc(result.legalniMinimum)}</strong>.
-      </li>
-      <li>
-        Část příjmu nad nezabavitelnou částku: {formatKc(result.prijemPredSrazkou)} − {formatKc(result.legalniMinimum)}
-        {' = '}<strong>{formatKc(Math.max(0, result.zbytekMzdyRaw))}</strong>.
-      </li>
-      {result.zbytekMzdyRaw > 0 && (
-        <>
-          <li>
-            Část určená k dělení na třetiny: <strong>{formatKc(result.zbytekKDeleni)}</strong>; jedna třetina: <strong>{formatKc(result.tretina)}</strong>.
-          </li>
-          <li>
-            Část postižitelná bez omezení: <strong>{formatKc(result.plneZabavitelna)}</strong>.
-          </li>
-          <li>
-            Srážka: {thirdsMultiplier} × {formatKc(result.tretina)} + {formatKc(result.plneZabavitelna)}
-            {' = '}<strong>{formatKc(result.srazka)}</strong>.
-          </li>
-        </>
-      )}
-      <li>
-        Po zákonné srážce zůstává: <strong>{formatKc(result.kVyplate)}</strong>.
-      </li>
-    </ol>
-  )
+    {groups.map((group,index) => <div key={group.id} className="report-payer-input">
+      {multiplePayers && <p><strong>Plátce {index+1}</strong> — přidělená nezabavitelná částka: {present(group.source.pridelenaNezabavitelna) ? formatKc(group.source.pridelenaNezabavitelna) : 'Nezadáno'}</p>}
+      {group.sources.map((source,i) => <div className="report-income-row" key={source.id || i}>
+        <span>{INCOME_LABELS[source.typ] || 'Příjem'}</span><strong>{formatKc(source.castka)}</strong>
+      </div>)}
+    </div>)}
+  </div>;
 }
 
-export const buildCalculationShareText = ({ mode, data, results }) => {
+export const buildCalculationShareText = ({ mode, data, results, params = DEFAULT_2026_PARAMS }) => {
+  const status = caseStatus(data,mode,results,params)
+  if (!status.canExport) throw new Error("Výpočet není platný a potvrzený.")
   if (mode === 'nezabavitelna') {
     return [
       'Orientační výpočet exekuční srážky 2026',
@@ -83,9 +56,11 @@ export const buildCalculationShareText = ({ mode, data, results }) => {
       `Počet exekucí: ${data.pocetExekuci === '4+' ? '4 a více' : '1 až 3'}`,
       `Druh dluhu: ${data.typPohledavky === 'prednostni' ? 'přednostní' : data.typPohledavky === 'vyzivne' ? 'výživné' : 'nepřednostní'}`,
       `Nezabavitelná částka: ${formatKc(results.ex.legalniMinimum)}`,
-      `Orientační srážka: ${formatKc(results.ex.srazka)}`,
+      `Maximální orientační srážka: ${formatKc(results.ex.srazka)}`,
       `Po srážce může zůstat: ${formatKc(results.ex.kVyplate)}`,
       '',
+      EXECUTION_NOTE,
+      ...status.warnings,
       'Výpočet je orientační.',
     ].join('\n')
   }
@@ -103,7 +78,7 @@ export const buildCalculationShareText = ({ mode, data, results }) => {
   const lines = [
     `Orientační výpočet – ${modeTitle(mode)} 2026`,
     `Postižitelný příjem celkem: ${formatKc(income)}`,
-    `Nezajištěné dluhy: ${formatKc(data.dluhyNezajistene)}`,
+    `Nezajištěné dluhy: ${data.dluhNeznamy ? "výše neznámá" : formatKc(data.dluhyNezajistene)}`,
     `Délka oddlužení: ${data.delkaOddluzeni} měsíců`,
     `Zákonná měsíční srážka: ${formatKc(deduction)}`,
   ]
@@ -116,13 +91,15 @@ export const buildCalculationShareText = ({ mode, data, results }) => {
   }
 
   if (coverage.thirdPartyContribution > 0) {
-    lines.push(`Plnění třetí osoby: ${formatKc(coverage.thirdPartyContribution)}`)
+    lines.push(`Zadaný aktivní příspěvek třetí osoby: ${formatKc(coverage.thirdPartyContribution)}; pro minimum potřeba ${formatKc(Math.min(coverage.thirdPartyContribution,coverage.deficitAfterDebtorPromise))}`)
   }
 
   lines.push(`Pro běžné nezajištěné dluhy měsíčně: ${formatKc(creditors)}`)
-  lines.push(`Odhad splacení nezajištěných dluhů: ${Number.isFinite(satisfaction) ? satisfaction.toFixed(1) : '0,0'} %`)
+  lines.push(`Odhad splacení bez příslibu a třetí osoby: ${percentageText(data,mode,results,params)}`)
   lines.push(`Minimální měsíční plnění: ${coverage.finalDeficit === 0 ? 'pokryto' : 'nepokryto – chybí ' + formatKc(coverage.finalDeficit)}`)
   lines.push('')
+  lines.push(MODEL_NOTE)
+  lines.push(...status.warnings)
   lines.push('Výpočet je orientační.')
 
   return lines.join('\n')
@@ -130,6 +107,9 @@ export const buildCalculationShareText = ({ mode, data, results }) => {
 
 const PrintableCalculationReport = ({ mode, data, results, params }) => {
   if (!['jednotlivec', 'manzele', 'nezabavitelna'].includes(mode)) return null
+
+  const status = caseStatus(data,mode,results,params)
+  if (!status.canExport) return <article className="calculation-print-report"><h1>Výpočet nelze vydat</h1><p>Zadání není dokončené nebo obsahuje chyby. Nejde o výsledek výpočtu.</p>{status.errors.map((e,i)=><p key={i}>{e.message}</p>)}<p>V aplikaci opravte údaje a potvrďte všechny tematické oddíly.</p></article>
 
   const printedAt = new Date().toLocaleString('cs-CZ')
   const spouses = mode === 'manzele'
@@ -147,6 +127,7 @@ const PrintableCalculationReport = ({ mode, data, results, params }) => {
         <div className="report-meta">Vytvořeno: {printedAt}</div>
       </header>
 
+      {status.warnings.map((warning,i)=><p key={i} className="report-warning"><strong>Upozornění:</strong> {warning}</p>)}
       <section className="report-section">
         <h3>1. Zadané údaje</h3>
 
@@ -194,12 +175,12 @@ const PrintableCalculationReport = ({ mode, data, results, params }) => {
                 label="Druh pohledávky"
                 value={data.typPohledavky === 'prednostni' ? 'Přednostní' : data.typPohledavky === 'vyzivne' ? 'Výživné' : 'Nepřednostní'}
               />
-              <Row label="Paušální náhrada plátce" value={data.uplatnitPausalPlatce ? 'Ano' : 'Ne'} />
+              <Row label="Paušální náhrada plátce" value={results.ex.nahradaPlatci > 0 ? 'Uplatněna u způsobilých plátců' : 'Neuplatněna'} />
             </>
           ) : (
             <>
               <Row label="Délka oddlužení" value={`${data.delkaOddluzeni} měsíců`} />
-              <Row label="Nezajištěné dluhy" value={formatKc(data.dluhyNezajistene)} />
+              <Row label="Nezajištěné dluhy" value={data.dluhNeznamy ? 'Výše neznámá' : formatKc(data.dluhyNezajistene)} />
               <Row label="Zajištěné dluhy" value={formatKc(data.dluhyZajistene)} />
               <Row label="Dluhy, které se oddlužením neodpouštějí" value={formatKc(data.dluhyNeosvoboditelne)} />
               <Row label="Odhad výtěžku ze zpeněžení majetku" value={formatKc(data.vytezekZpenezeni)} />
@@ -219,7 +200,7 @@ const PrintableCalculationReport = ({ mode, data, results, params }) => {
             <div className="report-formula">
               <Row label="Měsíční odměna a hotové výdaje správce" value={formatKc(params.odmenaSpravceJednotlivec)} />
               <Row label="Běžné zákonné výživné" value={formatKc(data.bezneMesicniVyzivne1)} />
-              <Row label="Orientačně pro nezajištěné věřitele měsíčně" value={formatKc(results.proVeriteleJ)} strong />
+              <Row label="Pro nezajištěné věřitele měsíčně bez doplňkových zdrojů" value={formatKc(results.proVeriteleJ)} strong />
             </div>
           </>
         )}
@@ -245,7 +226,7 @@ const PrintableCalculationReport = ({ mode, data, results, params }) => {
           <div className="report-grid">
             <Row label="Postižitelný příjem" value={formatKc(results.totalPrijem1)} />
             <Row label="Nezabavitelná částka" value={formatKc(results.ex.legalniMinimum)} />
-            <Row label="Zákonná srážka" value={formatKc(results.ex.srazka)} strong />
+            <Row label="Maximální orientační srážka" value={formatKc(results.ex.srazka)} strong />
             <Row label="Paušální náhrada plátce" value={formatKc(results.ex.nahradaPlatci)} />
             <Row label="Na dluh po náhradě plátci" value={formatKc(results.ex.srazkaCista)} />
             <Row label="Po srážce zůstává" value={formatKc(results.ex.kVyplate)} strong />
@@ -265,7 +246,8 @@ const PrintableCalculationReport = ({ mode, data, results, params }) => {
             <Row label="Požadované minimum" value={formatKc(coverage.requiredMinimum)} />
             <Row label="Závazný příslib" value={formatKc(coverage.debtorPromise)} />
             {coverage.basicNeedsDeclared && <Row label="Zadané základní potřeby domácnosti" value={formatKc(coverage.basicNeeds)} />}
-            <Row label="Plnění třetí osoby" value={formatKc(coverage.thirdPartyContribution)} />
+            <Row label="Zadaný aktivní příspěvek třetí osoby" value={formatKc(coverage.thirdPartyContribution)} />
+            <Row label="Z příspěvku k doplnění minima potřeba" value={formatKc(Math.min(coverage.thirdPartyContribution,coverage.deficitAfterDebtorPromise))} />
             <Row
               label="Stav minimálního plnění"
               value={coverage.finalDeficit === 0 ? 'Pokryto' : `Chybí ${formatKc(coverage.finalDeficit)}`}
@@ -276,12 +258,12 @@ const PrintableCalculationReport = ({ mode, data, results, params }) => {
               value={formatKc(Math.max(0, (spouses ? results.kVyplateCelkemM : results.insJ.kVyplate) - coverage.debtorPromise))}
             />
             <Row
-              label="Orientačně pro nezajištěné věřitele měsíčně"
+              label="Pro nezajištěné věřitele měsíčně bez doplňkových zdrojů"
               value={formatKc(spouses ? results.proVeriteleM : results.proVeriteleJ)}
             />
             <Row
-              label="Modelové uspokojení nezajištěných dluhů"
-              value={`${Number.isFinite(spouses ? results.uspokojeniM : results.uspokojeniJ) ? (spouses ? results.uspokojeniM : results.uspokojeniJ).toFixed(1) : '0.0'} %`}
+              label="Modelové splacení bez příslibu a třetí osoby"
+              value={percentageText(data,mode,results,params)}
               strong
             />
           </div>
@@ -289,6 +271,7 @@ const PrintableCalculationReport = ({ mode, data, results, params }) => {
       </section>
 
       <footer className="report-footer">
+        <p><strong>Rozsah modelu:</strong> {exekuce ? EXECUTION_NOTE : MODEL_NOTE}</p>
         <p><strong>Upozornění:</strong> Výpočet je orientační. Nejde o rozhodnutí soudu, exekutora ani insolvenčního správce. Skutečný výsledek může ovlivnit právní povaha příjmů a pohledávek, změna příjmů, další náklady řízení a další skutečnosti.</p>
       </footer>
     </article>

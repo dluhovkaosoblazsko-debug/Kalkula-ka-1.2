@@ -1,3 +1,6 @@
+// § 279 odst. 5 OSŘ: zákonný limit včetně DPH, nezávislý na odměně konkrétního správce.
+export const PENSION_EXCEPTION_LIMIT_2026 = 1089;
+
 export const DEFAULT_2026_PARAMS = {
   zivotniMinimum: 4860,
   normativniNajemne: 9430,
@@ -31,6 +34,7 @@ export function calculateWageDeduction(
     typ = 'neprednostni',
     pocetExekuci = '1-3',
     uplatnitPausal = false,
+    payerFeeEligible = true,
     mode = 'exekuce',
     nezabavitelnaOverride = null,
   },
@@ -103,7 +107,7 @@ export function calculateWageDeduction(
   const zaokrouhlovaciZbytek = castDoLimitu - castDoTretin
 
   const has4Plus = pocetExekuci === '4+'
-  const exception4Plus = Boolean(duchodPovinny && tretina < Number(params.odmenaSpravceJednotlivec || 0))
+  const exception4Plus = Boolean(duchodPovinny && tretina < PENSION_EXCEPTION_LIMIT_2026)
   const apply4PlusRule = has4Plus && !exception4Plus
 
   const isPriority = typ === 'prednostni' || typ === 'vyzivne' || mode === 'insolvence'
@@ -113,7 +117,7 @@ export function calculateWageDeduction(
     : tretina + plneZabavitelnaCast
 
   let nahradaPlatci = 0
-  if (mode === 'exekuce' && uplatnitPausal && srazka > 0) {
+  if (mode === 'exekuce' && uplatnitPausal && payerFeeEligible && srazka > 0) {
     nahradaPlatci = Math.min(Number(params.pausalniNahradaPlatce || 0), Math.ceil(srazka / 3))
   }
 
@@ -213,11 +217,13 @@ export function calculateMinimumPaymentCoverage({
   debtorPromise = 0,
   thirdPartyContribution = 0,
 }) {
+  // Monetary comparisons use cents; statutory-quarter rounding above is untouched.
+  const cents = value => Math.round(value * 100) / 100
   const statutory = Math.max(0, Number(statutoryDeduction) || 0)
   const required = Math.max(0, Number(requiredMinimum) || 0)
   const promise = Math.max(0, Number(debtorPromise) || 0)
   const thirdParty = Math.max(0, Number(thirdPartyContribution) || 0)
-  const totalAvailable = statutory + promise + thirdParty
+  const totalAvailable = cents(statutory + promise + thirdParty)
 
   return {
     statutoryDeduction: statutory,
@@ -225,12 +231,12 @@ export function calculateMinimumPaymentCoverage({
     debtorPromise: promise,
     thirdPartyContribution: thirdParty,
     totalAvailable,
-    deficitAfterStatutoryDeduction: Math.max(0, required - statutory),
-    deficitAfterDebtorPromise: Math.max(0, required - statutory - promise),
-    finalDeficit: Math.max(0, required - totalAvailable),
-    coveredByStatutoryDeduction: statutory >= required,
-    coveredByDebtorPromise: statutory + promise >= required,
-    coveredWithAdditionalSources: totalAvailable >= required,
+    deficitAfterStatutoryDeduction: Math.max(0, cents(required - statutory)),
+    deficitAfterDebtorPromise: Math.max(0, cents(required - statutory - promise)),
+    finalDeficit: Math.max(0, cents(required - totalAvailable)),
+    coveredByStatutoryDeduction: cents(statutory) >= cents(required),
+    coveredByDebtorPromise: cents(statutory + promise) >= cents(required),
+    coveredWithAdditionalSources: totalAvailable >= cents(required),
   }
 }
 

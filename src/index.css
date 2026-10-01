@@ -384,3 +384,11 @@ body {
     margin: 0;
   }
 }
+
+/* Print is independent of layered utility precedence and browser print entry point. */
+@media print {
+  .desktop-calculator, .mobile-calculator, .dashboard-topbar, .storage-status { display: none !important; }
+  .calculator-page { min-height: 0 !important; padding: 0 !important; }
+  .calculation-print-report { display: block !important; }
+  .report-payers > .report-subsection { break-inside: avoid; }
+}
