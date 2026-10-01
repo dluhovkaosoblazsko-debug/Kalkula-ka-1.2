@@ -159,7 +159,6 @@ const MinimumCoveragePanel = ({ coverage, data, onToggle, onAmountChange, onValu
   const thirdPartyKey = `pravidelnePlneniTretiOsoby${fieldSuffix}`;
   const rawPromise = Math.max(0, Number(data[promiseKey]) || 0);
   const stillNeedsThirdParty = coverage.deficitAfterDebtorPromise > 0;
-  const finalDeficitConfirmed = thirdPartyEnabled && coverage.finalDeficit > 0;
   const afterPromiseRetained = Math.max(0, coverage.retainedAfterStatutoryDeduction - coverage.debtorPromise);
   const reserveAfterPromise = coverage.basicNeedsDeclared
     ? Math.max(0, afterPromiseRetained - coverage.basicNeeds)
@@ -312,7 +311,7 @@ const MinimumCoveragePanel = ({ coverage, data, onToggle, onAmountChange, onValu
       {stillNeedsThirdParty && (
         <div className="rounded-lg border border-slate-700 bg-slate-900/60 p-3 space-y-3 print:border-slate-300 print:bg-slate-50">
           <p className="text-sm font-bold text-slate-100 print:text-slate-800">
-            Po započtení vlastního příslibu stále chybí {formatKc(coverage.deficitAfterDebtorPromise)}.
+            Zbývá pokrýt {formatKc(coverage.deficitAfterDebtorPromise)}.
           </p>
           <label className="flex items-start gap-2 text-sm text-slate-100 print:text-slate-800">
             <input
@@ -371,12 +370,7 @@ const MinimumCoveragePanel = ({ coverage, data, onToggle, onAmountChange, onValu
         </div>
       </details>
 
-      {finalDeficitConfirmed && (
-        <div className="rounded-lg border border-rose-400/70 bg-rose-950/45 p-3 text-xs text-rose-100 print:bg-rose-50 print:text-rose-900">
-          <p className="font-bold">Ani po započtení všech zadaných zdrojů není minimum pokryto.</p>
-          <p className="mt-1">Stále chybí {formatKc(coverage.finalDeficit)}. Při zadaných údajích může jít o riziko nesplnění podmínky pro povolení oddlužení.</p>
-        </div>
-      )}
+
     </section>
   );
 };
