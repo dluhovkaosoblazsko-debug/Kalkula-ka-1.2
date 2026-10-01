@@ -119,6 +119,16 @@ body {
 .dashboard-content .desktop-calculator [class*="border-red-"] { border-color: rgba(255, 137, 153, .48) !important; }
 .dashboard-content .desktop-calculator .bg-red-50 { background-color: rgba(108, 35, 57, .56) !important; }
 .dashboard-content .desktop-calculator .bg-red-100 { background-color: rgba(137, 43, 67, .62) !important; }
+.dashboard-content .desktop-calculator .text-rose-900 { color: #ffd3da !important; }
+.dashboard-content .desktop-calculator .text-rose-800,
+.dashboard-content .desktop-calculator .text-rose-700 { color: #ffb8c2 !important; }
+.dashboard-content .desktop-calculator .text-rose-600,
+.dashboard-content .desktop-calculator .text-rose-500 { color: #ff8f9f !important; }
+.dashboard-content .desktop-calculator [class*="border-rose-"] { border-color: rgba(255, 137, 153, .48) !important; }
+.dashboard-content .desktop-calculator .bg-rose-50 { background-color: rgba(108, 35, 57, .56) !important; }
+.dashboard-content .desktop-calculator .bg-rose-100 { background-color: rgba(137, 43, 67, .62) !important; }
+.dashboard-content .desktop-calculator .hover\:bg-rose-100:hover { background-color: rgba(137, 43, 67, .62) !important; }
+.dashboard-content .desktop-calculator .hover\:border-rose-400:hover { border-color: rgba(255, 137, 153, .68) !important; }
 .dashboard-content .desktop-calculator input, .dashboard-content .desktop-calculator select, .dashboard-content .desktop-calculator textarea { background-color: #0b2445 !important; border-color: rgba(127, 184, 255, .28) !important; color: var(--dash-text) !important; }
 .dashboard-content .desktop-calculator select { color-scheme: dark; }
 .dashboard-content .desktop-calculator select option,
