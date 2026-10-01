@@ -857,7 +857,7 @@ const HlavniKalkulackaPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 p-4 md:p-6 font-sans text-slate-800 print:bg-white print:p-0">
+    <div className="calculator-page min-h-screen p-4 md:p-6 font-sans text-slate-800 print:p-0">
       <MobileKalkulackaWizard
         activeTab={activeTab}
         setActiveTab={setActiveTab}
