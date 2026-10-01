@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { ChevronLeft, ChevronRight, ShieldAlert, User, Users } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Printer, Share2, ShieldAlert, User, Users } from 'lucide-react'
+import { buildCalculationShareText } from './PrintableCalculationReport'
 
 const INCOME_TYPES = [
   { value: 'mzda', label: 'Mzda / plat' },
@@ -182,6 +183,7 @@ const MobileKalkulackaWizard = ({
   formatKc,
 }) => {
   const [step, setStep] = useState('mode')
+  const [shareStatus, setShareStatus] = useState('')
 
   const mode = ['jednotlivec', 'manzele', 'nezabavitelna'].includes(activeTab)
     ? activeTab
@@ -264,6 +266,58 @@ const MobileKalkulackaWizard = ({
   }
 
   const firstDataStep = mode === 'manzele' ? 'incomeA' : 'income'
+
+  const handleShare = async () => {
+    const text = buildCalculationShareText({ mode, data, results })
+    const shareData = {
+      title: 'Výsledek kalkulačky srážek a oddlužení',
+      text,
+      url: window.location.href,
+    }
+
+    setShareStatus('')
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData)
+        return
+      }
+
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text)
+        setShareStatus('Souhrn byl zkopírován do schránky.')
+        return
+      }
+
+      setShareStatus('Sdílení není v tomto prohlížeči podporováno.')
+    } catch (error) {
+      if (error?.name !== 'AbortError') {
+        setShareStatus('Sdílení se nepodařilo.')
+      }
+    }
+  }
+
+  const renderResultActions = () => (
+    <div className="space-y-2">
+      <div className="grid grid-cols-2 gap-3">
+        <button
+          type="button"
+          onClick={() => window.print()}
+          className="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm font-black text-slate-800"
+        >
+          <Printer size={18} /> Tisk / PDF
+        </button>
+        <button
+          type="button"
+          onClick={handleShare}
+          className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-blue-600 px-3 py-3 text-sm font-black text-white"
+        >
+          <Share2 size={18} /> Sdílet
+        </button>
+      </div>
+      {shareStatus && <p className="text-center text-xs font-semibold text-slate-500">{shareStatus}</p>}
+    </div>
+  )
 
   const progressLabel = step === 'mode'
     ? null
@@ -581,6 +635,7 @@ const MobileKalkulackaWizard = ({
               </div>
             </details>
           </Section>
+          {renderResultActions()}
         </div>
       )
     }
@@ -626,6 +681,7 @@ const MobileKalkulackaWizard = ({
             </p>
           </details>
         </Section>
+        {renderResultActions()}
       </div>
     )
   }
