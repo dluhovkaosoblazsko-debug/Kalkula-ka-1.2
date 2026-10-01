@@ -579,6 +579,18 @@ const MobileKalkulackaWizard = ({
             onChange={(value) => setNumber('vyzivovaneOsoby2', value)}
             help="Například děti z předchozího vztahu. Společné děti sem už nepočítejte."
           />
+          <NumberField
+            label="Osoby s vymáhaným výživným – manžel A"
+            value={data.osobySVykonemProVyzivne1}
+            onChange={(value) => setNumber('osobySVykonemProVyzivne1', value)}
+            help="Pokud manžel A dluží na výživném a kvůli tomu proti němu běží exekuce, tato osoba se mu do nezabavitelné částky nezapočítá."
+          />
+          <NumberField
+            label="Osoby s vymáhaným výživným – manžel B"
+            value={data.osobySVykonemProVyzivne2}
+            onChange={(value) => setNumber('osobySVykonemProVyzivne2', value)}
+            help="Pokud manžel B dluží na výživném a kvůli tomu proti němu běží exekuce, tato osoba se mu do nezabavitelné částky nezapočítá."
+          />
         </Section>
       )
     }
