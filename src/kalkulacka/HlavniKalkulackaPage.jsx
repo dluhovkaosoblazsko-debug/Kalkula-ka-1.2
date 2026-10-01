@@ -948,7 +948,7 @@ const HlavniKalkulackaPage = () => {
                     <Tooltip text={activeTab === 'manzele'
                       ? 'Právně přesně: Společně vyživované dítě se při srážkách z příjmu obou manželů započítává do nezabavitelné částky každému z nich zvlášť.\n\nLidsky řečeno: Zadejte počet společných dětí, o které se spolu staráte. Kalkulačka je započítá každému z vás.'
                       : 'Právně přesně: Společně vyživované dítě se u jednotlivce započítá jako vyživovaná osoba, pokud jsou splněny zákonné podmínky.\n\nLidsky řečeno: Zadejte počet dětí, o které se staráte.'}>
-                      <label className="block text-[10px] font-bold text-slate-600 mb-1 w-fit cursor-help border-b border-dotted border-slate-400">
+                      <label htmlFor="spolecneDeti" className="block text-[10px] font-bold text-slate-600 mb-1 w-fit cursor-help border-b border-dotted border-slate-400">
                         {activeTab === 'manzele' ? 'Společné děti' : 'Společné děti / děti ve společné péči'}
                       </label>
                     </Tooltip>
@@ -987,7 +987,7 @@ const HlavniKalkulackaPage = () => {
                     <Tooltip text={activeTab === 'manzele'
                       ? "Právně přesně: Uveďte další osoby, kterým je tento dlužník povinen poskytovat výživné a které nejsou zahrnuty mezi společně vyživované děti. Za každou započitatelnou osobu se zvyšuje nezabavitelná částka o jednu čtvrtinu základní nezabavitelné částky.\n\nLidsky řečeno: Uveďte další osoby, které tento manžel vyživuje, například děti z předchozího vztahu. Společné děti sem už nepočítejte."
                       : "Právně přesně: Uveďte osoby, kterým jste povinen/povinna poskytovat výživné. Za každou započitatelnou osobu se zvyšuje nezabavitelná částka o jednu čtvrtinu základní nezabavitelné částky. Manžela/partnera sem nepočítejte; ten má zvláštní pravidlo.\n\nLidsky řečeno: Zadejte počet dětí a dalších osob, které vyživujete. Manžela nebo partnera sem nepočítejte."}>
-                      <label className="block text-[10px] font-bold text-slate-600 mb-1 w-fit cursor-help border-b border-dotted border-slate-400">
+                      <label htmlFor="vyzivovaneOsoby1" className="block text-[10px] font-bold text-slate-600 mb-1 w-fit cursor-help border-b border-dotted border-slate-400">
                         {activeTab === 'manzele' ? 'Další vyživované osoby tohoto dlužníka' : 'Vyživované osoby'}
                       </label>
                     </Tooltip>
