@@ -1,5 +1,6 @@
 import React from 'react'
 import HlavniKalkulackaPage from './kalkulacka/HlavniKalkulackaPage'
+import './print.css'
 
 const App = () => (
   <div className="dashboard-shell">
