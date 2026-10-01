@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Calculator, Users, User, Info, AlertCircle,
-  ShieldAlert, Settings, Layers, Printer, Gavel
+  ShieldAlert, Settings, Layers, Printer, Gavel, RotateCcw
 } from 'lucide-react';
 import { DEFAULT_2026_PARAMS, calculateCreditorSatisfaction, calculateDebtorPromiseLimit, calculateMinimumPaymentCoverage, calculateWageDeduction, getMinimumInsolvencyPayment } from '../lib/calculations2026';
 import MobileKalkulackaWizard from './MobileKalkulackaWizard';
@@ -763,11 +763,19 @@ const HlavniKalkulackaPage = () => {
     };
   }, [data, params, activeTab]);
 
+  const normalizeNumericValue = (name, value) => {
+    const parsed = Number(value);
+    const nonNegative = Math.max(0, Number.isFinite(parsed) ? parsed : 0);
+    return INTEGER_DATA_FIELDS.has(name) ? Math.floor(nonNegative) : nonNegative;
+  };
+
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     setData(prev => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : (type === 'number' ? parseFloat(value) || 0 : value)
+      [name]: type === 'checkbox'
+        ? checked
+        : (type === 'number' ? normalizeNumericValue(name, value) : value)
     }));
   };
 
@@ -788,7 +796,23 @@ const HlavniKalkulackaPage = () => {
   };
 
   const handleValueChange = (name, value) => {
-    setData(prev => ({ ...prev, [name]: value }));
+    setData(prev => ({
+      ...prev,
+      [name]: value === '' ? '' : normalizeNumericValue(name, value),
+    }));
+  };
+
+  const handleResetCalculation = () => {
+    const confirmed = window.confirm(
+      'Začít nový výpočet? Smažou se všechny zadané údaje kalkulačky. Odborné parametry výpočtu zůstanou zachované.'
+    );
+    if (!confirmed) return;
+
+    const freshData = createDefaultData();
+    setData(freshData);
+    setDluhyNezajisteneDraft('0');
+    setEditingDluhyNezajistene(false);
+    setActiveTab('jednotlivec');
   };
 
   const handlePrint = () => window.print();
@@ -846,6 +870,7 @@ const HlavniKalkulackaPage = () => {
         commitDluhyNezajistene={commitDluhyNezajistene}
         handleIncomeSourcesChange={handleIncomeSourcesChange}
         handleMultiplePayersChange={handleMultiplePayersChange}
+        onReset={handleResetCalculation}
         formatKc={formatKc}
       />
 
@@ -856,7 +881,7 @@ const HlavniKalkulackaPage = () => {
         params={params}
       />
 
-      <div className="hidden md:block print:hidden max-w-6xl mx-auto">
+      <div className="desktop-calculator max-w-6xl mx-auto print:hidden">
         <header className="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200 pb-4 print:pb-2">
           <div>
             <div className="flex flex-wrap items-center gap-2 mb-2 print:hidden">
@@ -867,33 +892,44 @@ const HlavniKalkulackaPage = () => {
               <Calculator className="text-blue-600 print:text-black" /> Kalkulačka srážek a oddlužení
             </h1>
           </div>
-          {activeTab !== 'nastaveni' && (
-            <div className="flex gap-2 print:hidden">
+          <div className="flex flex-wrap justify-end gap-2 print:hidden">
+            {activeTab !== 'nastaveni' && (
               <button onClick={handlePrint} className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-50 transition-colors shadow-sm">
                 <Printer size={14} /> Tisk / PDF
               </button>
-            </div>
-          )}
+            )}
+            <button onClick={handleResetCalculation} className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-50 transition-colors shadow-sm">
+              <RotateCcw size={14} /> Nový výpočet
+            </button>
+            <button
+              onClick={() => setActiveTab(activeTab === 'nastaveni' ? 'jednotlivec' : 'nastaveni')}
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-500 rounded-lg text-xs font-bold hover:bg-slate-50 hover:text-slate-700 transition-colors"
+            >
+              <Settings size={14} /> {activeTab === 'nastaveni' ? 'Zpět ke kalkulačce' : 'Odborné nastavení'}
+            </button>
+          </div>
         </header>
 
-        <nav className="flex flex-wrap p-1 bg-slate-200 rounded-xl mb-6 print:hidden">
-          {[
-            { id: 'jednotlivec', label: 'Oddlužení (Jednotlivec)', icon: User },
-            { id: 'manzele', label: 'Oddlužení (Manželé)', icon: Users },
-            { id: 'nezabavitelna', label: 'Exekuce (Srážky)', icon: ShieldAlert },
-            { id: 'nastaveni', label: 'Parametry výpočtu 2026', icon: Settings },
-          ].map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 min-w-[140px] flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-bold transition-all ${
-                activeTab === tab.id ? 'bg-white shadow text-blue-700' : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              <tab.icon size={16} /><span>{tab.label}</span>
-            </button>
-          ))}
-        </nav>
+        {activeTab !== 'nastaveni' && (
+          <nav className="flex flex-wrap p-1 bg-slate-200 rounded-xl mb-6 print:hidden" aria-label="Typ výpočtu">
+            {[
+              { id: 'jednotlivec', label: 'Oddlužení (Jednotlivec)', icon: User },
+              { id: 'manzele', label: 'Oddlužení (Manželé)', icon: Users },
+              { id: 'nezabavitelna', label: 'Exekuce (Srážky)', icon: ShieldAlert },
+            ].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                aria-pressed={activeTab === tab.id}
+                className={`flex-1 min-w-[140px] flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-bold transition-all ${
+                  activeTab === tab.id ? 'bg-white shadow text-blue-700' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <tab.icon size={16} /><span>{tab.label}</span>
+              </button>
+            ))}
+          </nav>
+        )}
 
         <div className="grid lg:grid-cols-12 gap-6 print:block">
           {/* LEVÝ PANEL - Vstupy */}
