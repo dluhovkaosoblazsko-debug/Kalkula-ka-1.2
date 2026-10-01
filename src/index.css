@@ -130,6 +130,7 @@ body {
 .dashboard-content .desktop-calculator button.bg-blue-600 { background: linear-gradient(135deg, #32bcd5, #5279ff) !important; color: #06162d !important; }
 
 .calculator-page {
+  min-height: calc(100vh - 76px) !important;
   background: transparent;
 }
 
@@ -169,6 +170,7 @@ body {
   }
 
   .calculator-page {
+    min-height: 100vh !important;
     background: #f8fafc;
     color-scheme: light;
   }
