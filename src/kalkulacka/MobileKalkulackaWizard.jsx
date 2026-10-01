@@ -32,26 +32,33 @@ const Section = ({ title, children, note }) => (
   </section>
 )
 
-const NumberField = ({ label, value, onChange, help, min = 0, max, step = 'any', disabled = false, placeholder }) => {
+const NumberField = ({ label, value, onChange, help, min = 0, max, step = 'any', disabled = false, placeholder, unit }) => {
   const id = useId()
 
   return (
     <div>
       <label htmlFor={id} className={labelClass}>{label}</label>
-      <input
-        id={id}
-        type="number"
-        min={min}
-        max={max}
-        step={step}
-        value={value ?? ''}
-        onFocus={selectZeroOnFocus}
-        onClick={selectZeroOnFocus}
-        onChange={(event) => onChange(event.target.value)}
-        disabled={disabled}
-        placeholder={placeholder}
-        className={inputClass + (disabled ? ' cursor-not-allowed opacity-50' : '')}
-      />
+      <div className="relative">
+        <input
+          id={id}
+          type="number"
+          min={min}
+          max={max}
+          step={step}
+          value={value ?? ''}
+          onFocus={selectZeroOnFocus}
+          onClick={selectZeroOnFocus}
+          onChange={(event) => onChange(event.target.value)}
+          disabled={disabled}
+          placeholder={placeholder}
+          className={inputClass + (unit ? ' pr-12' : '') + (disabled ? ' cursor-not-allowed opacity-50' : '')}
+        />
+        {unit && (
+          <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm font-bold text-slate-500">
+            {unit}
+          </span>
+        )}
+      </div>
       {help && <p className="mt-1.5 text-xs leading-relaxed text-slate-500">{help}</p>}
     </div>
   )
@@ -85,6 +92,9 @@ const MobileIncomeEditor = ({
   onSourcesChange,
   multiplePayers,
   onMultiplePayersChange,
+  onIncomeAmountTouched,
+  zeroIncomeConfirmed,
+  onConfirmZeroIncome,
 }) => {
   const safe = Array.isArray(sources) && sources.length
     ? sources
@@ -142,9 +152,13 @@ const MobileIncomeEditor = ({
             <NumberField
               label="Čistá měsíční částka"
               value={source.castka}
-              onChange={(value) => update(source.id, { castka: Math.max(0, Number(value) || 0) })}
+              onChange={(value) => {
+                onIncomeAmountTouched?.()
+                update(source.id, { castka: Math.max(0, Number(value) || 0) })
+              }}
               help="Částka, kterou byste dostali, kdyby vám z ní nebyly strhávány peníze kvůli dluhům."
-            />
+        unit="Kč"
+      />
 
             {multiplePayers && safe.length > 1 && (
               <NumberField
@@ -152,7 +166,8 @@ const MobileIncomeEditor = ({
                 value={source.pridelenaNezabavitelna}
                 onChange={(value) => update(source.id, { pridelenaNezabavitelna: value === '' ? '' : Math.max(0, Number(value) || 0) })}
                 help="Uveďte částku podle rozhodnutí nebo pokynu plátci."
-              />
+        unit="Kč"
+      />
             )}
           </div>
         </div>
@@ -170,6 +185,18 @@ const MobileIncomeEditor = ({
         <Choice checked={multiplePayers} onChange={onMultiplePayersChange}>
           Příjem dostávám z více stran
         </Choice>
+      )}
+
+      {safe.every((source) => (Number(source.castka) || 0) === 0) && (
+        <button
+          type="button"
+          onClick={onConfirmZeroIncome}
+          className={zeroIncomeConfirmed
+            ? 'w-full rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-black text-emerald-800'
+            : 'w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-black text-slate-700'}
+        >
+          {zeroIncomeConfirmed ? 'Potvrzeno: nemám postižitelný příjem' : 'Nemám žádný postižitelný příjem'}
+        </button>
       )}
     </Section>
   )
@@ -192,6 +219,8 @@ const MobileKalkulackaWizard = ({
 }) => {
   const [step, setStep] = useState('mode')
   const [shareStatus, setShareStatus] = useState('')
+  const [stepError, setStepError] = useState('')
+  const [incomeAmountTouched, setIncomeAmountTouched] = useState({ 1: false, 2: false })
 
   const mode = ['jednotlivec', 'manzele', 'nezabavitelna'].includes(activeTab)
     ? activeTab
@@ -254,12 +283,17 @@ const MobileKalkulackaWizard = ({
     setData((prev) => ({ ...prev, [key]: checked }))
   }
 
+  const getIncomeTotal = (sources) => (Array.isArray(sources) ? sources : [])
+    .reduce((sum, source) => sum + Math.max(0, Number(source.castka) || 0), 0)
+
   const chooseMode = (nextMode) => {
+    setStepError('')
     setActiveTab(nextMode)
     setStep(nextMode === 'manzele' ? 'incomeA' : 'income')
   }
 
   const goBack = () => {
+    setStepError('')
     const index = flow.indexOf(step)
     if (index <= 0) {
       setStep('mode')
@@ -269,6 +303,40 @@ const MobileKalkulackaWizard = ({
   }
 
   const goNext = () => {
+    setStepError('')
+
+    if (step === 'income' || step === 'incomeA' || step === 'incomeB') {
+      const person = step === 'incomeB' ? 2 : 1
+      const sources = person === 2 ? data.prijmy2 : data.prijmy1
+      if (getIncomeTotal(sources) <= 0 && !incomeAmountTouched[person]) {
+        setStepError('Částka příjmu zatím nebyla potvrzena. Zadejte příjem, nebo zvolte „Nemám žádný postižitelný příjem“.')
+        return
+      }
+    }
+
+    if (step === 'family') {
+      const maxA = (mode === 'manzele' ? Number(data.spolecneDeti) || 0 : 0)
+        + (Number(data.vyzivovaneOsoby1) || 0)
+        + (mode === 'manzele'
+          ? (results.insM_A?.partnerZapocitan ? 1 : 0)
+          : (results.insJ?.partnerZapocitan ? 1 : 0))
+      const maxB = (Number(data.spolecneDeti) || 0)
+        + (Number(data.vyzivovaneOsoby2) || 0)
+        + (results.insM_B?.partnerZapocitan ? 1 : 0)
+
+      if ((Number(data.osobySVykonemProVyzivne1) || 0) > maxA) {
+        setStepError(mode === 'manzele'
+          ? 'U manžela A nemůže být počet osob s vymáhaným výživným vyšší než počet započitatelných vyživovaných osob.'
+          : 'Počet osob s vymáhaným výživným nemůže být vyšší než počet započitatelných vyživovaných osob.')
+        return
+      }
+
+      if (mode === 'manzele' && (Number(data.osobySVykonemProVyzivne2) || 0) > maxB) {
+        setStepError('U manžela B nemůže být počet osob s vymáhaným výživným vyšší než počet započitatelných vyživovaných osob.')
+        return
+      }
+    }
+
     if (step === 'debts') commitDluhyNezajistene()
 
     const currentFlow = mode === 'nezabavitelna'
@@ -339,6 +407,87 @@ const MobileKalkulackaWizard = ({
     </div>
   )
 
+  const renderResultReview = () => {
+    const income1 = getIncomeTotal(data.prijmy1)
+    const income2 = getIncomeTotal(data.prijmy2)
+    const debtType = data.typPohledavky === 'prednostni'
+      ? 'Přednostní dluh'
+      : data.typPohledavky === 'vyzivne'
+        ? 'Výživné'
+        : 'Nepřednostní dluh'
+
+    const commonFamily = 'Vyživované osoby: ' + (Number(data.vyzivovaneOsoby1) || 0)
+      + ' · s vymáhaným výživným: ' + (Number(data.osobySVykonemProVyzivne1) || 0)
+
+    const rows = mode === 'nezabavitelna'
+      ? [
+          { step: 'income', label: 'Příjmy', summary: formatKc(income1) },
+          { step: 'family', label: 'Rodinná situace', summary: commonFamily },
+          { step: 'execution', label: 'Nastavení exekuce', summary: data.pocetExekuci + ' · ' + debtType },
+        ]
+      : mode === 'manzele'
+        ? [
+            { step: 'incomeA', label: 'Příjmy manžela A', summary: formatKc(income1) },
+            { step: 'incomeB', label: 'Příjmy manžela B', summary: formatKc(income2) },
+            {
+              step: 'family',
+              label: 'Rodinná situace',
+              summary: 'Společné děti: ' + (Number(data.spolecneDeti) || 0)
+                + ' · další osoby A/B: ' + (Number(data.vyzivovaneOsoby1) || 0) + '/' + (Number(data.vyzivovaneOsoby2) || 0),
+            },
+            {
+              step: 'other',
+              label: 'Další příjmy a platby',
+              summary: 'Výživné A/B: ' + formatKc(data.bezneMesicniVyzivne1) + ' / ' + formatKc(data.bezneMesicniVyzivne2),
+            },
+            { step: 'debts', label: 'Dluhy a majetek', summary: 'Nezajištěné dluhy: ' + formatKc(data.dluhyNezajistene) },
+            ...(flow.includes('minimum') ? [{
+              step: 'minimum',
+              label: 'Doplnění minima',
+              summary: 'Vlastní příslib: ' + formatKc(coverage.debtorPromise || 0),
+            }] : []),
+          ]
+        : [
+            { step: 'income', label: 'Příjmy', summary: formatKc(income1) },
+            { step: 'family', label: 'Rodinná situace', summary: commonFamily },
+            {
+              step: 'other',
+              label: 'Další příjmy a platby',
+              summary: 'Výživné: ' + formatKc(data.bezneMesicniVyzivne1) + ' · chráněné příjmy: ' + formatKc(data.chranenePrijmy1),
+            },
+            { step: 'debts', label: 'Dluhy a majetek', summary: 'Nezajištěné dluhy: ' + formatKc(data.dluhyNezajistene) },
+            ...(flow.includes('minimum') ? [{
+              step: 'minimum',
+              label: 'Doplnění minima',
+              summary: 'Vlastní příslib: ' + formatKc(coverage.debtorPromise || 0),
+            }] : []),
+          ]
+
+    return (
+      <Section title="Zadané údaje" note="Pokud potřebujete něco opravit, vraťte se přímo do příslušné části.">
+        <div className="space-y-2">
+          {rows.map((item) => (
+            <button
+              key={item.step}
+              type="button"
+              onClick={() => {
+                setStepError('')
+                setStep(item.step)
+              }}
+              className="flex w-full items-center justify-between gap-4 rounded-xl border border-slate-200 bg-slate-50 p-3 text-left"
+            >
+              <span className="min-w-0">
+                <strong className="block text-sm text-slate-800">{item.label}</strong>
+                <span className="mt-0.5 block text-xs leading-relaxed text-slate-500">{item.summary}</span>
+              </span>
+              <span className="shrink-0 text-xs font-black text-blue-700">Upravit</span>
+            </button>
+          ))}
+        </div>
+      </Section>
+    )
+  }
+
   const progressLabel = step === 'mode'
     ? null
     : 'Krok ' + currentIndex + ' z ' + (flow.length - 1)
@@ -351,11 +500,22 @@ const MobileKalkulackaWizard = ({
         <p className="mt-2 text-sm leading-relaxed text-slate-600">Vyberte situaci. Další otázky se zobrazí postupně.</p>
         <button
           type="button"
-          onClick={onReset}
+          onClick={() => {
+            if (onReset()) {
+              setIncomeAmountTouched({ 1: false, 2: false })
+              setStepError('')
+              setStep('mode')
+            }
+          }}
           className="mt-3 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-bold text-slate-600"
         >
           Nový výpočet / vymazat údaje
         </button>
+      </div>
+
+      <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
+        <strong className="block font-black">Soukromí vašich údajů</strong>
+        <p className="mt-1 leading-relaxed">Údaje se průběžně ukládají pouze v tomto zařízení. Můžete je kdykoli vymazat volbou „Nový výpočet / vymazat údaje“.</p>
       </div>
 
       <button
@@ -399,7 +559,8 @@ const MobileKalkulackaWizard = ({
 
       <NumberField
         label="Z toho osoby s vymáhaným výživným"
-            step="1"
+        step="1"
+        max={(Number(data.vyzivovaneOsoby1) || 0) + (results.insJ?.partnerZapocitan ? 1 : 0)}
         value={data.osobySVykonemProVyzivne1}
         onChange={(value) => setNumber('osobySVykonemProVyzivne1', value)}
         help="Pokud dlužíte na výživném a kvůli tomu proti vám běží exekuce, tato osoba se do nezabavitelné částky nezapočítá."
@@ -426,12 +587,14 @@ const MobileKalkulackaWizard = ({
         value={data.bezneMesicniVyzivne1}
         onChange={(value) => setNumber('bezneMesicniVyzivne1', value)}
         help="Uveďte měsíční výživné, které platíte na děti, které nemáte ve své péči."
+        unit="Kč"
       />
       <NumberField
         label="Jiné příjmy chráněné před srážkami"
         value={data.chranenePrijmy1}
         onChange={(value) => setNumber('chranenePrijmy1', value)}
         help="Například příspěvek na péči, dávky pro osoby se zdravotním postižením, náhradní výživné, daňový bonus nebo výživné na dítě."
+        unit="Kč"
       />
     </Section>
   )
@@ -453,17 +616,20 @@ const MobileKalkulackaWizard = ({
 
       <div>
         <label htmlFor="mobile-dluhy-nezajistene" className={labelClass}>Nezajištěné dluhy</label>
-        <input
-          id="mobile-dluhy-nezajistene"
-          type="number"
-          min="0"
-          value={dluhyNezajisteneDraft}
-          onFocus={selectZeroOnFocus}
-          onClick={selectZeroOnFocus}
-          onChange={(event) => setDluhyNezajisteneDraft(event.target.value)}
-          onBlur={commitDluhyNezajistene}
-          className={inputClass}
-        />
+        <div className="relative">
+          <input
+            id="mobile-dluhy-nezajistene"
+            type="number"
+            min="0"
+            value={dluhyNezajisteneDraft}
+            onFocus={selectZeroOnFocus}
+            onClick={selectZeroOnFocus}
+            onChange={(event) => setDluhyNezajisteneDraft(event.target.value)}
+            onBlur={commitDluhyNezajistene}
+            className={inputClass + ' pr-12'}
+          />
+          <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm font-bold text-slate-500">Kč</span>
+        </div>
         <p className="mt-1.5 text-xs text-slate-500">Půjčky, úvěry, kreditní karty, kontokorenty nebo nezaplacené faktury.</p>
       </div>
 
@@ -472,6 +638,7 @@ const MobileKalkulackaWizard = ({
         value={data.dluhyZajistene}
         onChange={(value) => setNumber('dluhyZajistene', value)}
         help="Například hypotéka zajištěná domem."
+        unit="Kč"
       />
 
       <NumberField
@@ -479,6 +646,7 @@ const MobileKalkulackaWizard = ({
         value={data.dluhyNeosvoboditelne}
         onChange={(value) => setNumber('dluhyNeosvoboditelne', value)}
         help="Například dlužné výživné, náhrada škody na zdraví nebo úmyslně způsobená škoda."
+        unit="Kč"
       />
 
       <NumberField
@@ -486,6 +654,7 @@ const MobileKalkulackaWizard = ({
         value={data.vytezekZpenezeni}
         onChange={(value) => setNumber('vytezekZpenezeni', value)}
         help="Pokud se bude majetek prodávat, odhadněte částku, která z prodeje půjde na dluhy."
+        unit="Kč"
       />
     </Section>
   )
@@ -560,7 +729,8 @@ const MobileKalkulackaWizard = ({
               onChange={setBasicNeeds}
               placeholder="Např. 14 000"
               help="Uveďte částku na základní životní potřeby své domácnosti. Kalkulačka sama neposuzuje, zda je zadaná částka přiměřená."
-            />
+        unit="Kč"
+      />
 
             {coverage.basicNeedsDeclared ? (
               <>
@@ -583,7 +753,8 @@ const MobileKalkulackaWizard = ({
                   help={coverage.maxDebtorPromise > 0
                     ? 'Nejvýše ' + formatKc(coverage.maxDebtorPromise) + '. Vyšší částku kalkulačka pro splnění minima nepoužije.'
                     : 'Podle zadaných údajů vám nad základními potřebami nezbývá částka použitelná pro příslib.'}
-                />
+        unit="Kč"
+      />
 
                 <div className="rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">
                   <div className="flex justify-between gap-3"><span>Po příslibu vám zůstane</span><strong>{formatKc(afterPromiseRetained)}</strong></div>
@@ -629,7 +800,8 @@ const MobileKalkulackaWizard = ({
                 value={data[thirdKey]}
                 onChange={(value) => setData((prev) => ({ ...prev, [thirdKey]: Math.max(0, Number(value) || 0) }))}
                 help="Kalkulačka ověřuje pouze matematické pokrytí. Neposuzuje platnost závazku ani schopnost třetí osoby plnit."
-              />
+        unit="Kč"
+      />
             )}
           </div>
         )}
@@ -666,6 +838,7 @@ const MobileKalkulackaWizard = ({
               </div>
             </details>
           </Section>
+          {renderResultReview()}
           {renderResultActions()}
         </div>
       )
@@ -712,6 +885,7 @@ const MobileKalkulackaWizard = ({
             </p>
           </details>
         </Section>
+        {renderResultReview()}
         {renderResultActions()}
       </div>
     )
@@ -728,6 +902,9 @@ const MobileKalkulackaWizard = ({
           onSourcesChange={(sources) => handleIncomeSourcesChange(1, sources)}
           multiplePayers={Boolean(data.vicePlatcu1)}
           onMultiplePayersChange={(checked) => handleMultiplePayersChange(1, checked)}
+          onIncomeAmountTouched={() => setIncomeAmountTouched((prev) => ({ ...prev, 1: true }))}
+          zeroIncomeConfirmed={incomeAmountTouched[1] && getIncomeTotal(data.prijmy1) === 0}
+          onConfirmZeroIncome={() => setIncomeAmountTouched((prev) => ({ ...prev, 1: true }))}
         />
       )
     }
@@ -740,6 +917,9 @@ const MobileKalkulackaWizard = ({
           onSourcesChange={(sources) => handleIncomeSourcesChange(2, sources)}
           multiplePayers={Boolean(data.vicePlatcu2)}
           onMultiplePayersChange={(checked) => handleMultiplePayersChange(2, checked)}
+          onIncomeAmountTouched={() => setIncomeAmountTouched((prev) => ({ ...prev, 2: true }))}
+          zeroIncomeConfirmed={incomeAmountTouched[2] && getIncomeTotal(data.prijmy2) === 0}
+          onConfirmZeroIncome={() => setIncomeAmountTouched((prev) => ({ ...prev, 2: true }))}
         />
       )
     }
@@ -775,6 +955,7 @@ const MobileKalkulackaWizard = ({
           <NumberField
             label="Osoby s vymáhaným výživným – manžel A"
             step="1"
+            max={(Number(data.spolecneDeti) || 0) + (Number(data.vyzivovaneOsoby1) || 0) + (results.insM_A?.partnerZapocitan ? 1 : 0)}
             value={data.osobySVykonemProVyzivne1}
             onChange={(value) => setNumber('osobySVykonemProVyzivne1', value)}
             help="Pokud manžel A dluží na výživném a kvůli tomu proti němu běží exekuce, tato osoba se mu do nezabavitelné částky nezapočítá."
@@ -782,6 +963,7 @@ const MobileKalkulackaWizard = ({
           <NumberField
             label="Osoby s vymáhaným výživným – manžel B"
             step="1"
+            max={(Number(data.spolecneDeti) || 0) + (Number(data.vyzivovaneOsoby2) || 0) + (results.insM_B?.partnerZapocitan ? 1 : 0)}
             value={data.osobySVykonemProVyzivne2}
             onChange={(value) => setNumber('osobySVykonemProVyzivne2', value)}
             help="Pokud manžel B dluží na výživném a kvůli tomu proti němu běží exekuce, tato osoba se mu do nezabavitelné částky nezapočítá."
@@ -795,10 +977,18 @@ const MobileKalkulackaWizard = ({
     if (step === 'other' && mode === 'manzele') {
       return (
         <Section title="Další příjmy a platby">
-          <NumberField label="Výživné – manžel A" value={data.bezneMesicniVyzivne1} onChange={(value) => setNumber('bezneMesicniVyzivne1', value)} />
-          <NumberField label="Výživné – manžel B" value={data.bezneMesicniVyzivne2} onChange={(value) => setNumber('bezneMesicniVyzivne2', value)} />
-          <NumberField label="Chráněné příjmy – manžel A" value={data.chranenePrijmy1} onChange={(value) => setNumber('chranenePrijmy1', value)} />
-          <NumberField label="Chráněné příjmy – manžel B" value={data.chranenePrijmy2} onChange={(value) => setNumber('chranenePrijmy2', value)} />
+          <NumberField label="Výživné – manžel A" value={data.bezneMesicniVyzivne1} onChange={(value) => setNumber('bezneMesicniVyzivne1', value)}
+        unit="Kč"
+      />
+          <NumberField label="Výživné – manžel B" value={data.bezneMesicniVyzivne2} onChange={(value) => setNumber('bezneMesicniVyzivne2', value)}
+        unit="Kč"
+      />
+          <NumberField label="Chráněné příjmy – manžel A" value={data.chranenePrijmy1} onChange={(value) => setNumber('chranenePrijmy1', value)}
+        unit="Kč"
+      />
+          <NumberField label="Chráněné příjmy – manžel B" value={data.chranenePrijmy2} onChange={(value) => setNumber('chranenePrijmy2', value)}
+        unit="Kč"
+      />
         </Section>
       )
     }
@@ -829,7 +1019,8 @@ const MobileKalkulackaWizard = ({
             label="Jiné příjmy chráněné před srážkami"
             value={data.chranenePrijmy1}
             onChange={(value) => setNumber('chranenePrijmy1', value)}
-          />
+        unit="Kč"
+      />
 
           <Choice checked={data.uplatnitPausalPlatce} onChange={(checked) => setBool('uplatnitPausalPlatce', checked)}>
             Plátce příjmu uplatňuje paušální náhradu nákladů
@@ -876,9 +1067,18 @@ const MobileKalkulackaWizard = ({
         </div>
       </div>
 
+      {stepError && (
+        <div role="alert" className="mb-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-bold leading-relaxed text-red-800">
+          {stepError}
+        </div>
+      )}
+
       {content}
 
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 p-3 backdrop-blur">
+      <div
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 p-3 backdrop-blur"
+        style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
+      >
         <div className="mx-auto flex max-w-xl gap-3">
           <button
             type="button"
@@ -893,7 +1093,7 @@ const MobileKalkulackaWizard = ({
               onClick={() => setStep(firstDataStep)}
               className="flex flex-[1.4] items-center justify-center rounded-xl bg-blue-600 px-4 py-3 text-sm font-black text-white"
             >
-              Upravit údaje
+              {mode === 'manzele' ? 'Upravit příjmy manžela A' : 'Upravit příjmy'}
             </button>
           ) : (
             <button

@@ -14,7 +14,7 @@ const App = () => (
       <div className="dashboard-topbar-actions">
         <span className="dashboard-status">
           <span className="dashboard-status-dot" />
-          Údaje zůstávají v tomto zařízení
+          Údaje se průběžně ukládají pouze v tomto zařízení
         </span>
       </div>
     </header>
