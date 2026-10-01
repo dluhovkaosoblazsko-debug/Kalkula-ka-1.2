@@ -3,7 +3,7 @@ import {
   Calculator, Users, User, Info, AlertCircle,
   ShieldAlert, Settings, Layers, Printer, Gavel
 } from 'lucide-react';
-import { DEFAULT_2026_PARAMS, calculateCreditorSatisfaction, calculateMinimumPaymentCoverage, calculateWageDeduction, getMinimumInsolvencyPayment } from '../lib/calculations2026';
+import { DEFAULT_2026_PARAMS, calculateCreditorSatisfaction, calculateDebtorPromiseLimit, calculateMinimumPaymentCoverage, calculateWageDeduction, getMinimumInsolvencyPayment } from '../lib/calculations2026';
 import MobileKalkulackaWizard from './MobileKalkulackaWizard';
 
 // --- POMOCNÁ KOMPONENTA PRO TOOLTIPY ---
@@ -302,6 +302,7 @@ const HlavniKalkulackaPage = () => {
       bezneMesicniVyzivne1: 0,
       // Doplňkové zdroje pro krytí minima oddlužení (jednotlivec)
       povolitPrislibDluznika1: false,
+      zakladniPotreby1: '',
       zavaznyPrislib1: '',
       povolitPlneniTretiOsoby1: false,
       pravidelnePlneniTretiOsoby1: '',
@@ -312,6 +313,7 @@ const HlavniKalkulackaPage = () => {
       bezneMesicniVyzivne2: 0,
       // Doplňkové zdroje pro krytí minima oddlužení (manželé)
       povolitPrislibDluznikaM: false,
+      zakladniPotrebyM: '',
       zavaznyPrislibM: '',
       povolitPlneniTretiOsobyM: false,
       pravidelnePlneniTretiOsobyM: '',
@@ -520,12 +522,21 @@ const HlavniKalkulackaPage = () => {
       ordinaryAlimony: data.bezneMesicniVyzivne1,
       configuredMinimum: 0,
     });
-    const coverageJ = calculateMinimumPaymentCoverage({
-      statutoryDeduction: insJ.srazka,
-      requiredMinimum: minimalniNutnaSrazkaJ,
-      debtorPromise: data.povolitPrislibDluznika1 ? data.zavaznyPrislib1 : 0,
-      thirdPartyContribution: data.povolitPlneniTretiOsoby1 ? data.pravidelnePlneniTretiOsoby1 : 0,
+    const promiseLimitJ = calculateDebtorPromiseLimit({
+      retainedAfterStatutoryDeduction: insJ.kVyplate,
+      basicNeeds: data.zakladniPotreby1,
+      deficitAfterStatutoryDeduction: Math.max(0, minimalniNutnaSrazkaJ - insJ.srazka),
+      requestedPromise: data.povolitPrislibDluznika1 ? data.zavaznyPrislib1 : 0,
     });
+    const coverageJ = {
+      ...calculateMinimumPaymentCoverage({
+        statutoryDeduction: insJ.srazka,
+        requiredMinimum: minimalniNutnaSrazkaJ,
+        debtorPromise: promiseLimitJ.effectiveDebtorPromise,
+        thirdPartyContribution: data.povolitPlneniTretiOsoby1 ? data.pravidelnePlneniTretiOsoby1 : 0,
+      }),
+      ...promiseLimitJ,
+    };
 
     // --- Společné oddlužení manželů ---
     // Každý manžel má vlastní srážku. Společné děti se započítávají každému zvlášť.
@@ -572,12 +583,21 @@ const HlavniKalkulackaPage = () => {
       ordinaryAlimony: bezneVyzivneM,
       configuredMinimum: 0,
     });
-    const coverageM = calculateMinimumPaymentCoverage({
-      statutoryDeduction: srazkaCelkemM,
-      requiredMinimum: minimalniNutnaSrazkaM,
-      debtorPromise: data.povolitPrislibDluznikaM ? data.zavaznyPrislibM : 0,
-      thirdPartyContribution: data.povolitPlneniTretiOsobyM ? data.pravidelnePlneniTretiOsobyM : 0,
+    const promiseLimitM = calculateDebtorPromiseLimit({
+      retainedAfterStatutoryDeduction: kVyplateCelkemM,
+      basicNeeds: data.zakladniPotrebyM,
+      deficitAfterStatutoryDeduction: Math.max(0, minimalniNutnaSrazkaM - srazkaCelkemM),
+      requestedPromise: data.povolitPrislibDluznikaM ? data.zavaznyPrislibM : 0,
     });
+    const coverageM = {
+      ...calculateMinimumPaymentCoverage({
+        statutoryDeduction: srazkaCelkemM,
+        requiredMinimum: minimalniNutnaSrazkaM,
+        debtorPromise: promiseLimitM.effectiveDebtorPromise,
+        thirdPartyContribution: data.povolitPlneniTretiOsobyM ? data.pravidelnePlneniTretiOsobyM : 0,
+      }),
+      ...promiseLimitM,
+    };
 
     return {
       ex,
@@ -631,6 +651,10 @@ const HlavniKalkulackaPage = () => {
       [enabledKey]: checked,
       ...(checked ? {} : { [amountKey]: '' }),
     }));
+  };
+
+  const handleValueChange = (name, value) => {
+    setData(prev => ({ ...prev, [name]: value }));
   };
 
   const handlePrint = () => window.print();
@@ -1190,6 +1214,7 @@ const HlavniKalkulackaPage = () => {
                   data={data}
                   onToggle={handleAdditionalSourceToggle}
                   onAmountChange={handleInputChange}
+                  onValueChange={handleValueChange}
                   modeLabel="jednotlivce"
                   fieldSuffix="1"
                 />
@@ -1315,6 +1340,7 @@ const HlavniKalkulackaPage = () => {
                   data={data}
                   onToggle={handleAdditionalSourceToggle}
                   onAmountChange={handleInputChange}
+                  onValueChange={handleValueChange}
                   modeLabel="společné oddlužení manželů"
                   fieldSuffix="M"
                 />
