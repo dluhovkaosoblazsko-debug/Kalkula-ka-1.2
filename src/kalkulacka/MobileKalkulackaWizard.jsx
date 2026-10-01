@@ -412,6 +412,12 @@ const MobileKalkulackaWizard = ({
     const basicNeedsKey = 'zakladniPotreby' + suffix
     const promiseKey = 'zavaznyPrislib' + suffix
     const thirdKey = 'pravidelnePlneniTretiOsoby' + suffix
+    const afterPromiseRetained = Math.max(0, coverage.retainedAfterStatutoryDeduction - coverage.debtorPromise)
+    const reserveAfterPromise = coverage.basicNeedsDeclared
+      ? Math.max(0, afterPromiseRetained - coverage.basicNeeds)
+      : 0
+    const ownFundsCoverDeficit = coverage.basicNeedsDeclared
+      && coverage.availableAboveBasicNeeds >= coverage.deficitAfterStatutoryDeduction
 
     const setBasicNeeds = (value) => {
       const nextNeeds = value === '' ? '' : Math.max(0, Number(value) || 0)
@@ -442,10 +448,10 @@ const MobileKalkulackaWizard = ({
     return (
       <Section title="Stačí příjem pro oddlužení?">
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-          <div className="flex justify-between gap-3 text-sm"><span>Potřebné minimum</span><strong>{formatKc(coverage.requiredMinimum)}</strong></div>
-          <div className="mt-2 flex justify-between gap-3 text-sm"><span>Zákonná srážka</span><strong>{formatKc(coverage.statutoryDeduction)}</strong></div>
-          <div className="mt-3 flex justify-between gap-3 border-t border-amber-200 pt-3 font-black text-amber-900">
-            <span>Chybí</span><span>{formatKc(coverage.deficitAfterStatutoryDeduction)}</span>
+          <p className="font-black text-amber-900">Do potřebného minima chybí {formatKc(coverage.deficitAfterStatutoryDeduction)}.</p>
+          <div className="mt-3 space-y-2 text-sm text-slate-700">
+            <div className="flex justify-between gap-3"><span>Zákonná srážka</span><strong>{formatKc(coverage.statutoryDeduction)}</strong></div>
+            <div className="flex justify-between gap-3"><span>Potřebné minimum</span><strong>{formatKc(coverage.requiredMinimum)}</strong></div>
           </div>
         </div>
 
@@ -454,57 +460,72 @@ const MobileKalkulackaWizard = ({
           onChange={(checked) => setData((prev) => ({
             ...prev,
             ['povolitPrislibDluznika' + suffix]: checked,
-            ...(checked ? {} : { [basicNeedsKey]: '', [promiseKey]: '' }),
+            ...(checked ? {} : { [promiseKey]: '' }),
           }))}
+          help="Nejdřív ověříme, kolik vám musí podle vámi zadaných potřeb zůstat."
         >
-          Chybějící částku budu doplácet ze svých peněz
+          Chci chybějící částku doplnit ze svých peněz
         </Choice>
 
         {promiseEnabled && (
           <>
             <NumberField
-              label="Kolik nejméně měsíčně potřebujete na základní potřeby domácnosti?"
+              label="Kolik nejméně potřebujete měsíčně ponechat na základní potřeby domácnosti?"
               value={data[basicNeedsKey]}
               onChange={setBasicNeeds}
               placeholder="Např. 14 000"
-              help="Uveďte částku, kterou potřebujete ponechat na základní životní potřeby své domácnosti. Kalkulačka neposuzuje, zda je tato částka věcně přiměřená."
+              help="Uveďte částku na základní životní potřeby své domácnosti. Kalkulačka sama neposuzuje, zda je zadaná částka přiměřená."
             />
 
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
-              <div className="flex justify-between gap-3"><span>Po zákonné srážce zůstává</span><strong>{formatKc(coverage.retainedAfterStatutoryDeduction)}</strong></div>
-              {coverage.basicNeedsDeclared ? (
-                <>
-                  <div className="mt-2 flex justify-between gap-3"><span>Základní potřeby</span><strong>− {formatKc(coverage.basicNeeds)}</strong></div>
-                  <div className="mt-2 flex justify-between gap-3 border-t border-slate-200 pt-2 font-black"><span>Maximální příslib</span><strong>{formatKc(coverage.maxDebtorPromise)}</strong></div>
-                </>
-              ) : (
-                <p className="mt-2 font-bold text-amber-700">Nejprve zadejte základní potřeby. Bez nich se příslib do výpočtu nezapočítá.</p>
-              )}
-            </div>
+            {coverage.basicNeedsDeclared ? (
+              <>
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
+                  <div className="flex justify-between gap-3"><span>Po zákonné srážce vám zůstává</span><strong>{formatKc(coverage.retainedAfterStatutoryDeduction)}</strong></div>
+                  <div className="mt-2 flex justify-between gap-3"><span>Základní potřeby domácnosti</span><strong>− {formatKc(coverage.basicNeeds)}</strong></div>
+                  <div className="mt-2 flex justify-between gap-3 border-t border-slate-200 pt-2"><span>Nad základní potřeby zbývá</span><strong>{formatKc(coverage.availableAboveBasicNeeds)}</strong></div>
+                  <div className="mt-3 flex justify-between gap-3 font-black text-blue-800">
+                    <span>{ownFundsCoverDeficit ? 'K doplnění minima stačí' : 'Z vlastních peněz lze použít nejvýše'}</span>
+                    <strong>{formatKc(coverage.maxDebtorPromise)}</strong>
+                  </div>
+                </div>
 
-            <NumberField
-              label="Kolik budete měsíčně doplácet?"
-              value={coverage.basicNeedsDeclared ? coverage.effectiveDebtorPromise : ''}
-              onChange={setPromise}
-              max={coverage.maxDebtorPromise}
-              disabled={!coverage.basicNeedsDeclared || coverage.maxDebtorPromise <= 0}
-              placeholder="Nejprve zadejte základní potřeby"
-              help={coverage.basicNeedsDeclared && coverage.maxDebtorPromise > 0
-                ? 'Kalkulačka nepovolí více než ' + formatKc(coverage.maxDebtorPromise) + '. Limit je dán tím, kolik chybí do minima a kolik vám zbývá nad základními potřebami.'
-                : 'Podle zadaných údajů zatím nelze závazný příslib započítat.'}
-            />
+                <NumberField
+                  label="Kolik chcete každý měsíc přidávat?"
+                  value={coverage.effectiveDebtorPromise}
+                  onChange={setPromise}
+                  max={coverage.maxDebtorPromise}
+                  disabled={coverage.maxDebtorPromise <= 0}
+                  help={coverage.maxDebtorPromise > 0
+                    ? 'Nejvýše ' + formatKc(coverage.maxDebtorPromise) + '. Vyšší částku kalkulačka pro splnění minima nepoužije.'
+                    : 'Podle zadaných údajů vám nad základními potřebami nezbývá částka použitelná pro příslib.'}
+                />
 
-            {coverage.basicNeedsDeclared && (
-              <div className="rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">
-                <div className="flex justify-between gap-3"><span>Závazný příslib</span><strong>− {formatKc(coverage.debtorPromise)}</strong></div>
-                <div className="mt-2 flex justify-between gap-3 border-t border-blue-200 pt-2 font-black"><span>Po příslibu zůstává</span><strong>{formatKc(Math.max(0, coverage.retainedAfterStatutoryDeduction - coverage.debtorPromise))}</strong></div>
+                <div className="rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">
+                  <div className="flex justify-between gap-3"><span>Po příslibu vám zůstane</span><strong>{formatKc(afterPromiseRetained)}</strong></div>
+                  <div className="mt-2 flex justify-between gap-3 border-t border-blue-200 pt-2"><span>Nad zadané základní potřeby zbývá</span><strong>{formatKc(reserveAfterPromise)}</strong></div>
+                </div>
+
+                <details className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                  <summary className="cursor-pointer text-sm font-black text-slate-800">Proč se závazný příslib omezuje?</summary>
+                  <div className="mt-3 space-y-2 text-sm leading-relaxed text-slate-600">
+                    <p><strong>Právně přesně:</strong> Dlužník může chybějící plnění hradit ze své nezabavitelné částky nebo z jiných nepostižitelných příjmů, nesmí tím však ohrozit své základní hmotné potřeby ani potřeby osob odkázaných výživou.</p>
+                    <p><strong>Lidsky řečeno:</strong> Kalkulačka proto nepovolí pro příslib více, než vám podle zadaných potřeb zbývá, ani více, než kolik chybí do potřebného minima.</p>
+                  </div>
+                </details>
+              </>
+            ) : (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm font-bold text-amber-800">
+                Nejprve zadejte základní potřeby domácnosti. Teprve potom lze určit strop příslibu.
               </div>
             )}
           </>
         )}
 
         {coverage.deficitAfterDebtorPromise > 0 && (
-          <>
+          <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+            <p className="text-sm font-black text-slate-800">
+              Zbývá pokrýt {formatKc(coverage.deficitAfterDebtorPromise)}.
+            </p>
             <Choice
               checked={thirdEnabled}
               onChange={(checked) => setData((prev) => ({
@@ -512,30 +533,38 @@ const MobileKalkulackaWizard = ({
                 ['povolitPlneniTretiOsoby' + suffix]: checked,
                 ...(checked ? {} : { [thirdKey]: '' }),
               }))}
+              help="Například rodič, partner nebo jiná osoba."
             >
-              Chybějící částku bude hradit někdo jiný
+              Chci chybějící částku pokrýt pomocí třetí osoby
             </Choice>
 
             {thirdEnabled && (
               <NumberField
-                label="Kolik bude měsíčně hradit?"
+                label="Kolik bude třetí osoba měsíčně hradit?"
                 value={data[thirdKey]}
                 onChange={(value) => setData((prev) => ({ ...prev, [thirdKey]: Math.max(0, Number(value) || 0) }))}
-                help="Například rodič nebo partner se zaváže každý měsíc hradit do oddlužení určitou částku za vás."
+                help="Kalkulačka ověřuje pouze matematické pokrytí. Neposuzuje platnost závazku ani schopnost třetí osoby plnit."
               />
             )}
-          </>
+          </div>
         )}
 
         <div className={['rounded-xl border p-4 text-sm font-bold', coverage.finalDeficit === 0 ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-rose-200 bg-rose-50 text-rose-800'].join(' ')}>
           {coverage.finalDeficit === 0
-            ? 'Podle zadaných údajů je potřebné měsíční minimum pokryto.'
-            : 'Stále chybí ' + formatKc(coverage.finalDeficit) + '.'}
+            ? 'Minimum je pokryto.'
+            : 'Do potřebného minima stále chybí ' + formatKc(coverage.finalDeficit) + '.'}
         </div>
+
+        <details className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+          <summary className="cursor-pointer text-sm font-black text-slate-800">Jak kalkulačka s doplňkovými zdroji pracuje?</summary>
+          <div className="mt-3 space-y-2 text-sm leading-relaxed text-slate-600">
+            <p><strong>Právně přesně:</strong> Doplňkové zdroje slouží v této verzi ke kontrole minimálního plnění. Model dlouhodobého uspokojení věřitelů pracuje pouze se zákonnou srážkou.</p>
+            <p><strong>Lidsky řečeno:</strong> Příslib a pomoc třetí osoby kalkulačka používá jen pro ověření, zda je pokryto minimum pro vstup do oddlužení. Do dlouhodobého odhadu splacení dluhů je zatím nezapočítává.</p>
+          </div>
+        </details>
       </Section>
     )
   }
-
   const renderResult = () => {
     if (mode === 'nezabavitelna') {
       return (
