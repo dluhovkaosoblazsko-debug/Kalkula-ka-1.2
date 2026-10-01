@@ -449,6 +449,15 @@ const createDefaultData = () => ({
   dluhyZajistene: 0,
   dluhyNeosvoboditelne: 0,
   vytezekZpenezeni: 0,
+
+  // Desktopový progresivní formulář pro oddlužení jednotlivce.
+  desktopJednotlivecMaVyzivovaneOsoby: false,
+  desktopJednotlivecMaVymahaneVyzivne: false,
+  desktopJednotlivecPlatiVyzivne: false,
+  desktopJednotlivecMaChranenePrijmy: false,
+  desktopJednotlivecProdejMajetku: false,
+  desktopJednotlivecMaZajisteneDluhy: false,
+  desktopJednotlivecMaNeosvoboditelneDluhy: false,
 });
 
 const HlavniKalkulackaPage = () => {
@@ -490,6 +499,29 @@ const HlavniKalkulackaPage = () => {
         if (Number(parsed.prijemDalsi2) > 0) legacy.push({ id: 'p2-jiny', typ: 'jiny', castka: Number(parsed.prijemDalsi2), pridelenaNezabavitelna: '' });
         migrated.prijmy2 = legacy.length ? legacy : defaultData.prijmy2;
       }
+      if (parsed.desktopJednotlivecMaVyzivovaneOsoby === undefined) {
+        migrated.desktopJednotlivecMaVyzivovaneOsoby =
+          Number(migrated.vyzivovaneOsoby1) > 0 || Number(migrated.osobySVykonemProVyzivne1) > 0;
+      }
+      if (parsed.desktopJednotlivecMaVymahaneVyzivne === undefined) {
+        migrated.desktopJednotlivecMaVymahaneVyzivne = Number(migrated.osobySVykonemProVyzivne1) > 0;
+      }
+      if (parsed.desktopJednotlivecPlatiVyzivne === undefined) {
+        migrated.desktopJednotlivecPlatiVyzivne = Number(migrated.bezneMesicniVyzivne1) > 0;
+      }
+      if (parsed.desktopJednotlivecMaChranenePrijmy === undefined) {
+        migrated.desktopJednotlivecMaChranenePrijmy = Number(migrated.chranenePrijmy1) > 0;
+      }
+      if (parsed.desktopJednotlivecProdejMajetku === undefined) {
+        migrated.desktopJednotlivecProdejMajetku = Number(migrated.vytezekZpenezeni) > 0;
+      }
+      if (parsed.desktopJednotlivecMaZajisteneDluhy === undefined) {
+        migrated.desktopJednotlivecMaZajisteneDluhy = Number(migrated.dluhyZajistene) > 0;
+      }
+      if (parsed.desktopJednotlivecMaNeosvoboditelneDluhy === undefined) {
+        migrated.desktopJednotlivecMaNeosvoboditelneDluhy = Number(migrated.dluhyNeosvoboditelne) > 0;
+      }
+
       if (parsed.partnerProNezabavitelnou1 === undefined) {
         const debtorHasQualifyingPension = hasQualifyingPension(migrated.prijmy1);
         migrated.partnerProNezabavitelnou1 = debtorHasQualifyingPension
@@ -802,6 +834,26 @@ const HlavniKalkulackaPage = () => {
     }));
   };
 
+  const handleDesktopProgressiveToggle = (flagName, checked, resetValues = {}) => {
+    setData((prev) => ({
+      ...prev,
+      [flagName]: checked,
+      ...(checked ? {} : resetValues),
+    }));
+  };
+
+  const handleIndividualDependentsChange = (event) => {
+    const nextValue = normalizeNumericValue('vyzivovaneOsoby1', event.target.value);
+    setData((prev) => ({
+      ...prev,
+      vyzivovaneOsoby1: nextValue,
+      ...(nextValue > 0 ? {} : {
+        osobySVykonemProVyzivne1: 0,
+        desktopJednotlivecMaVymahaneVyzivne: false,
+      }),
+    }));
+  };
+
   const handleValueChange = (name, value) => {
     setData(prev => ({
       ...prev,
@@ -1050,7 +1102,7 @@ const HlavniKalkulackaPage = () => {
                 
                 {activeTab !== 'manzele' && (
                   <p className="rounded-lg border border-blue-200 bg-blue-50 p-2.5 text-xs leading-relaxed text-blue-900">
-                    Nejdřív zadejte alespoň jeden postižitelný příjem. Potom doplňte rodinnou situaci a další údaje níže.
+                    Nejdřív zadejte alespoň jeden postižitelný příjem. Potom se zobrazí další otázky a jen ty údaje, které se vás týkají.
                   </p>
                 )}
 
@@ -1067,6 +1119,8 @@ const HlavniKalkulackaPage = () => {
                   </div>
                 )}
 
+                {activeTab !== 'jednotlivec' && (
+                  <>
                 <div className="grid grid-cols-2 gap-3 pt-2">
                   <div>
                     <Tooltip text={activeTab === 'manzele'
@@ -1130,7 +1184,190 @@ const HlavniKalkulackaPage = () => {
                   </Tooltip>
                   <input type="number" onFocus={selectZeroOnFocus} onClick={selectZeroOnFocus} id="chranenePrijmy1" min="0" name="chranenePrijmy1" value={data.chranenePrijmy1} onChange={handleInputChange} className="w-full p-2 bg-green-50 border border-green-200 rounded-lg outline-none font-bold text-green-900 text-sm" />
                 </div>
+
+                  </>
+                )}
               </div>
+
+
+              {activeTab === 'jednotlivec' && hasActiveIncome && (
+                <>
+                  <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 space-y-3 border-t-4 border-t-indigo-400">
+                    <h3 className="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-1 flex items-center gap-2">
+                      <Users size={14}/> 2. Rodinná situace
+                    </h3>
+
+                    <label className="flex items-start gap-2.5 rounded-lg border border-slate-200 bg-slate-50 p-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={Boolean(data.desktopJednotlivecMaVyzivovaneOsoby)}
+                        onChange={(event) => handleDesktopProgressiveToggle(
+                          'desktopJednotlivecMaVyzivovaneOsoby',
+                          event.target.checked,
+                          {
+                            vyzivovaneOsoby1: 0,
+                            osobySVykonemProVyzivne1: 0,
+                            desktopJednotlivecMaVymahaneVyzivne: false,
+                          },
+                        )}
+                        className="mt-0.5 h-4 w-4 accent-blue-600"
+                      />
+                      <span className="text-xs font-bold text-slate-700">
+                        Vyživujete děti nebo jiné osoby?
+                        <span className="mt-1 block font-normal text-slate-500">Manžela nebo partnera sem nepočítejte; ten se posuzuje zvlášť níže.</span>
+                      </span>
+                    </label>
+
+                    {data.desktopJednotlivecMaVyzivovaneOsoby && (
+                      <div className="space-y-3 pl-1">
+                        <div>
+                          <Tooltip text={"Právně přesně: Uveďte osoby, kterým jste povinen/povinna poskytovat výživné. Za každou započitatelnou osobu se zvyšuje nezabavitelná částka o jednu čtvrtinu základní nezabavitelné částky. Manžela/partnera sem nepočítejte; ten má zvláštní pravidlo.\n\nLidsky řečeno: Zadejte počet dětí a dalších osob, které vyživujete. Manžela nebo partnera sem nepočítejte."}>
+                            <label htmlFor="vyzivovaneOsoby1" className="block text-[10px] font-bold text-slate-600 mb-1 w-fit cursor-help border-b border-dotted border-slate-400">Kolik osob vyživujete?</label>
+                          </Tooltip>
+                          <input
+                            type="number"
+                            onFocus={selectZeroOnFocus}
+                            onClick={selectZeroOnFocus}
+                            id="vyzivovaneOsoby1"
+                            min="0"
+                            step="1"
+                            name="vyzivovaneOsoby1"
+                            value={data.vyzivovaneOsoby1}
+                            onChange={handleIndividualDependentsChange}
+                            className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg font-bold text-sm"
+                          />
+                        </div>
+
+                        {Number(data.vyzivovaneOsoby1) > 0 && (
+                          <>
+                            <label className="flex items-start gap-2.5 rounded-lg border border-amber-200 bg-amber-50 p-3 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={Boolean(data.desktopJednotlivecMaVymahaneVyzivne)}
+                                onChange={(event) => handleDesktopProgressiveToggle(
+                                  'desktopJednotlivecMaVymahaneVyzivne',
+                                  event.target.checked,
+                                  { osobySVykonemProVyzivne1: 0 },
+                                )}
+                                className="mt-0.5 h-4 w-4 accent-amber-600"
+                              />
+                              <span className="text-xs font-bold text-amber-900">
+                                Je na některou z těchto osob proti vám vymáháno výživné?
+                              </span>
+                            </label>
+
+                            {data.desktopJednotlivecMaVymahaneVyzivne && (
+                              <div>
+                                <Tooltip text={"Právně přesně: Jedna čtvrtina nezabavitelné částky se nezapočítá na osobu, v jejíž prospěch byl nařízen výkon rozhodnutí nebo exekuce pro výživné, pokud toto vymáhání stále trvá.\n\nLidsky řečeno: Uveďte počet vyživovaných osob, na které proti vám právě běží vymáhání výživného."}>
+                                  <label htmlFor="osobySVykonemProVyzivne1" className="block text-[10px] font-bold text-amber-700 mb-1 w-fit cursor-help border-b border-dotted border-amber-600">Kolika osob se vymáhané výživné týká?</label>
+                                </Tooltip>
+                                <input
+                                  type="number"
+                                  onFocus={selectZeroOnFocus}
+                                  onClick={selectZeroOnFocus}
+                                  id="osobySVykonemProVyzivne1"
+                                  min="0"
+                                  step="1"
+                                  max={data.vyzivovaneOsoby1 + (results.insJ?.partnerZapocitan ? 1 : 0)}
+                                  name="osobySVykonemProVyzivne1"
+                                  value={data.osobySVykonemProVyzivne1}
+                                  onChange={handleInputChange}
+                                  className="w-full p-2 bg-amber-50 border border-amber-200 rounded-lg font-bold text-amber-900 text-sm"
+                                />
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="border-t border-slate-100 pt-3">
+                      <label className="flex items-start gap-2 cursor-pointer w-fit">
+                        <input
+                          type="checkbox"
+                          name="partnerProNezabavitelnou1"
+                          checked={Boolean(data.partnerProNezabavitelnou1)}
+                          onChange={handleInputChange}
+                          className="mt-0.5 accent-blue-600"
+                        />
+                        {results.duchodPovinny1 ? (
+                          <Tooltip text={"Právně přesně: Kalkulačka z vašich příjmů rozpoznala starobní důchod, invalidní důchod II. nebo III. stupně nebo sirotčí důchod. Pokud máte manžela/manželku nebo partnera/partnerku, započte se na něj/ni jedna čtvrtina nezabavitelné částky.\n\nLidsky řečeno: Pokud pobíráte rozhodný důchod a máte manžela nebo partnera, může se vám zvýšit nezabavitelná částka."}>
+                            <span className="text-xs font-bold text-slate-700 cursor-help border-b border-dotted border-slate-400">Mám manžela/manželku nebo partnera/partnerku</span>
+                          </Tooltip>
+                        ) : (
+                          <Tooltip text={"Právně přesně: Pokud rozhodný důchod nepobíráte vy, započte se na manžela/partnera jedna čtvrtina nezabavitelné částky jen tehdy, pokud byl starobní důchod, invalidní důchod II. nebo III. stupně nebo sirotčí důchod přiznán jemu/jí.\n\nLidsky řečeno: Zaškrtněte, pokud váš manžel nebo partner pobírá některý z rozhodných důchodů."}>
+                            <span className="text-xs font-bold text-slate-700 cursor-help border-b border-dotted border-slate-400">Manžel/partner pobírá důchod rozhodný pro zvýšení nezabavitelné částky</span>
+                          </Tooltip>
+                        )}
+                      </label>
+                    </div>
+
+                    {results.duchodPovinny1 && (
+                      <div className="p-2.5 bg-blue-50 rounded-lg border border-blue-100 text-[10px] text-blue-800 leading-relaxed">
+                        <strong>Rozpoznán rozhodný důchod.</strong> Zadaný druh důchodu může ovlivnit nezabavitelnou částku a některá zvláštní pravidla srážek.
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 space-y-3 border-t-4 border-t-green-400">
+                    <h3 className="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-1 flex items-center gap-2">
+                      <Info size={14}/> 3. Další příjmy a platby
+                    </h3>
+
+                    <label className="flex items-start gap-2.5 rounded-lg border border-slate-200 bg-slate-50 p-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={Boolean(data.desktopJednotlivecPlatiVyzivne)}
+                        onChange={(event) => handleDesktopProgressiveToggle(
+                          'desktopJednotlivecPlatiVyzivne',
+                          event.target.checked,
+                          { bezneMesicniVyzivne1: 0 },
+                        )}
+                        className="mt-0.5 h-4 w-4 accent-blue-600"
+                      />
+                      <span className="text-xs font-bold text-slate-700">
+                        Platíte pravidelně běžné výživné?
+                        <span className="mt-1 block font-normal text-slate-500">Například na dítě, které nemáte ve své péči.</span>
+                      </span>
+                    </label>
+
+                    {data.desktopJednotlivecPlatiVyzivne && (
+                      <div>
+                        <Tooltip text={"Právně přesně: Uveďte běžné zákonné výživné, které máte během oddlužení pravidelně hradit. Tato pohledávka se hradí před nezajištěnými věřiteli a ovlivňuje i minimální částku potřebnou pro oddlužení.\n\nLidsky řečeno: Uveďte měsíční výživné, které pravidelně platíte."}>
+                          <label htmlFor="bezneMesicniVyzivne1" className="block text-[10px] font-bold text-red-600 mb-1 w-fit cursor-help border-b border-dotted border-red-400">Kolik měsíčně platíte? (Kč)</label>
+                        </Tooltip>
+                        <input type="number" onFocus={selectZeroOnFocus} onClick={selectZeroOnFocus} id="bezneMesicniVyzivne1" min="0" name="bezneMesicniVyzivne1" value={data.bezneMesicniVyzivne1} onChange={handleInputChange} className="w-full p-2 bg-red-50 border border-red-200 rounded-lg outline-none font-bold text-red-800 text-sm" />
+                      </div>
+                    )}
+
+                    <label className="flex items-start gap-2.5 rounded-lg border border-slate-200 bg-slate-50 p-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={Boolean(data.desktopJednotlivecMaChranenePrijmy)}
+                        onChange={(event) => handleDesktopProgressiveToggle(
+                          'desktopJednotlivecMaChranenePrijmy',
+                          event.target.checked,
+                          { chranenePrijmy1: 0 },
+                        )}
+                        className="mt-0.5 h-4 w-4 accent-blue-600"
+                      />
+                      <span className="text-xs font-bold text-slate-700">
+                        Máte jiné příjmy chráněné před srážkami?
+                        <span className="mt-1 block font-normal text-slate-500">Například příspěvek na péči, daňový bonus nebo výživné na dítě.</span>
+                      </span>
+                    </label>
+
+                    {data.desktopJednotlivecMaChranenePrijmy && (
+                      <div>
+                        <Tooltip text={"Právně přesně: Uveďte pouze příjmy, z nichž se podle pravidel srážek ze mzdy a jiných příjmů srážka neprovádí. Důchod, nemocenské, peněžitá pomoc v mateřství, podpora v nezaměstnanosti ani DPP/DPČ sem obecně nepatří.\n\nLidsky řečeno: Sem patří například příspěvek na péči, dávky pro osoby se zdravotním postižením, náhradní výživné, daňový bonus nebo výživné na dítě."}>
+                          <label htmlFor="chranenePrijmy1" className="block text-[10px] font-bold text-green-700 mb-1 w-fit cursor-help border-b border-dotted border-green-500">Kolik měsíčně dostáváte? (Kč)</label>
+                        </Tooltip>
+                        <input type="number" onFocus={selectZeroOnFocus} onClick={selectZeroOnFocus} id="chranenePrijmy1" min="0" name="chranenePrijmy1" value={data.chranenePrijmy1} onChange={handleInputChange} className="w-full p-2 bg-green-50 border border-green-200 rounded-lg outline-none font-bold text-green-900 text-sm" />
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
 
               {/* SEKCE 3: DLUŽNÍK 2 (JEN PRO MANŽELE) */}
               {activeTab === 'manzele' && (
