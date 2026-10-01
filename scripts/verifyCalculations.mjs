@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import {
   DEFAULT_2026_PARAMS,
   calculateCreditorSatisfaction,
+  calculateDebtorPromiseLimit,
   calculateMinimumPaymentCoverage,
   calculateWageDeduction,
   getMinimumInsolvencyPayment,
@@ -96,6 +97,39 @@ assert.equal(coverage({ statutoryDeduction: 2000 }).deficitAfterStatutoryDeducti
 assert.equal(coverage({ statutoryDeduction: 2000, debtorPromise: 178 }).finalDeficit, 0)
 assert.equal(coverage({ statutoryDeduction: 2000, debtorPromise: '', thirdPartyContribution: '' }).totalAvailable, 2000)
 assert.equal(coverage({ statutoryDeduction: 2000, debtorPromise: 100, thirdPartyContribution: 78 }).totalAvailable, 2178)
+
+// Závazný příslib je pro účely kalkulačky omezen současně
+// chybějícím minimem a částkou, která zbývá nad základními potřebami.
+const promiseLimit = calculateDebtorPromiseLimit({
+  retainedAfterStatutoryDeduction: 15000,
+  basicNeeds: 12000,
+  deficitAfterStatutoryDeduction: 2178,
+  requestedPromise: 5000,
+})
+assert.equal(promiseLimit.basicNeedsDeclared, true)
+assert.equal(promiseLimit.availableAboveBasicNeeds, 3000)
+assert.equal(promiseLimit.maxDebtorPromise, 2178)
+assert.equal(promiseLimit.effectiveDebtorPromise, 2178)
+assert.equal(promiseLimit.promiseWasLimited, true)
+
+const promiseLimitedByNeeds = calculateDebtorPromiseLimit({
+  retainedAfterStatutoryDeduction: 15000,
+  basicNeeds: 14000,
+  deficitAfterStatutoryDeduction: 2178,
+  requestedPromise: 1500,
+})
+assert.equal(promiseLimitedByNeeds.maxDebtorPromise, 1000)
+assert.equal(promiseLimitedByNeeds.effectiveDebtorPromise, 1000)
+
+const promiseWithoutNeeds = calculateDebtorPromiseLimit({
+  retainedAfterStatutoryDeduction: 15000,
+  basicNeeds: 0,
+  deficitAfterStatutoryDeduction: 2178,
+  requestedPromise: 500,
+})
+assert.equal(promiseWithoutNeeds.basicNeedsDeclared, false)
+assert.equal(promiseWithoutNeeds.maxDebtorPromise, 0)
+assert.equal(promiseWithoutNeeds.effectiveDebtorPromise, 0)
 
 const exekuce = calculateWageDeduction(
   {
