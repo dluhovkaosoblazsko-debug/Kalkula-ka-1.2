@@ -139,6 +139,23 @@ body {
   .dashboard-content { overflow-x: hidden; }
 }
 
+@media (max-width: 767px) {
+  .dashboard-topbar,
+  .dashboard-sidebar {
+    display: none;
+  }
+
+  .dashboard-layout {
+    display: block;
+    min-height: 100vh;
+  }
+
+  .dashboard-content {
+    width: 100%;
+    overflow: visible;
+  }
+}
+
 @media print {
   .dashboard-topbar, .dashboard-sidebar { display: none; }
   .dashboard-shell, .dashboard-content { background: white !important; color: black !important; }

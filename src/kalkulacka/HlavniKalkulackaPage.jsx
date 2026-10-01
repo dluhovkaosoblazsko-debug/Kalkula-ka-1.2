@@ -4,6 +4,7 @@ import {
   ShieldAlert, Settings, Layers, Printer, Gavel
 } from 'lucide-react';
 import { DEFAULT_2026_PARAMS, calculateCreditorSatisfaction, calculateMinimumPaymentCoverage, calculateWageDeduction, getMinimumInsolvencyPayment } from '../lib/calculations2026';
+import MobileKalkulackaWizard from './MobileKalkulackaWizard';
 
 // --- POMOCNÁ KOMPONENTA PRO TOOLTIPY ---
 const Tooltip = ({ children, text }) => (
@@ -669,7 +670,22 @@ const HlavniKalkulackaPage = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 p-4 md:p-6 font-sans text-slate-800 print:bg-white print:p-0">
-      <div className="max-w-6xl mx-auto">
+      <MobileKalkulackaWizard
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        data={data}
+        setData={setData}
+        results={results}
+        params={params}
+        dluhyNezajisteneDraft={dluhyNezajisteneDraft}
+        setDluhyNezajisteneDraft={setDluhyNezajisteneDraft}
+        commitDluhyNezajistene={commitDluhyNezajistene}
+        handleIncomeSourcesChange={handleIncomeSourcesChange}
+        handleMultiplePayersChange={handleMultiplePayersChange}
+        formatKc={formatKc}
+      />
+
+      <div className="hidden md:block print:block max-w-6xl mx-auto">
         <header className="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200 pb-4 print:pb-2">
           <div>
             <div className="flex flex-wrap items-center gap-2 mb-2 print:hidden">
