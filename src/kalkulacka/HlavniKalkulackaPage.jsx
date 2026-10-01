@@ -1457,63 +1457,150 @@ const HlavniKalkulackaPage = () => {
                   </label>
                 </div>
               ) : (
-                <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 space-y-3 border-t-4 border-t-slate-400">
-                  <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">{activeTab === 'manzele' ? '4. Dluhy a majetek' : '2. Dluhy a majetek'}</h3>
-                  
-                  <div className="grid grid-cols-2 gap-3">
-                     <div>
-                       <Tooltip text={"Právně přesně: Kalkulačka používá 36 měsíců jako standardní dobu oddlužení. Variantu 60 měsíců použijte zejména tehdy, pokud bylo dlužníku v posledních 20 letech před podáním nového návrhu přiznáno osvobození od placení pohledávek zahrnutých do předchozího oddlužení.\n\nLidsky řečeno: Oddlužení běžně trvá 3 roky. Pokud jste už v posledních 20 letech oddlužením prošli a byli osvobozeni od zbytku dluhů, trvá nové oddlužení 5 let."}>
-                         <label htmlFor="delkaOddluzeni" className="block text-[10px] font-bold text-slate-600 mb-1 w-fit cursor-help border-b border-dotted border-slate-400">Délka oddlužení</label>
-                       </Tooltip>
-                       <select id="delkaOddluzeni" name="delkaOddluzeni" value={data.delkaOddluzeni} onChange={handleInputChange} className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg font-bold text-sm">
+                (activeTab === 'manzele' || hasActiveIncome) && (
+                  <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 space-y-3 border-t-4 border-t-slate-400">
+                    <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">4. Dluhy a majetek</h3>
+
+                    <div className={activeTab === 'manzele' ? 'grid grid-cols-2 gap-3' : ''}>
+                      <div>
+                        <Tooltip text={"Právně přesně: Kalkulačka používá 36 měsíců jako standardní dobu oddlužení. Variantu 60 měsíců použijte zejména tehdy, pokud bylo dlužníku v posledních 20 letech před podáním nového návrhu přiznáno osvobození od placení pohledávek zahrnutých do předchozího oddlužení.\n\nLidsky řečeno: Oddlužení běžně trvá 3 roky. Pokud jste už v posledních 20 letech oddlužením prošli a byli osvobozeni od zbytku dluhů, trvá nové oddlužení 5 let."}>
+                          <label htmlFor="delkaOddluzeni" className="block text-[10px] font-bold text-slate-600 mb-1 w-fit cursor-help border-b border-dotted border-slate-400">Délka oddlužení</label>
+                        </Tooltip>
+                        <select id="delkaOddluzeni" name="delkaOddluzeni" value={data.delkaOddluzeni} onChange={handleInputChange} className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg font-bold text-sm">
                           <option value={36}>3 roky – standardní doba</option>
                           <option value={60}>5 let – předchozí osvobození v posledních 20 letech</option>
-                       </select>
-                     </div>
-                     <div>
-                       <Tooltip text={"Právně přesně: Zadejte odhad částky, která po případném zpeněžení majetku a souvisejících nákladech skutečně připadne nezajištěným věřitelům. Ne každý majetek musí být v oddlužení zpeněžen.\n\nLidsky řečeno: Pokud se v oddlužení bude prodávat váš majetek, odhadněte částku, která z jeho prodeje půjde na dluhy. Například peníze z prodeje auta."}>
-                         <label htmlFor="vytezekZpenezeni" className="block text-[10px] font-bold text-green-700 mb-1 w-fit cursor-help border-b border-dotted border-green-500">Výtěžek ze zpeněžení majetku (Kč)</label>
-                       </Tooltip>
-                       <input type="number" onFocus={selectZeroOnFocus} onClick={selectZeroOnFocus} id="vytezekZpenezeni" min="0" name="vytezekZpenezeni" value={data.vytezekZpenezeni} onChange={handleInputChange} className="w-full p-2 bg-green-50 border border-green-200 rounded-lg font-bold text-green-900 text-sm" />
-                     </div>
-                  </div>
-                  
-                  <div>
-                    <Tooltip text={"Právně přesně: Jde o pohledávky věřitelů, které nejsou zajištěny konkrétním majetkem. Z této částky kalkulačka počítá modelovou míru uspokojení nezajištěných věřitelů.\n\nLidsky řečeno: Uveďte běžné dluhy, za které neručíte konkrétním majetkem. Typicky půjčky, úvěry, kreditní karty, kontokorenty nebo nezaplacené faktury."}>
-                      <label htmlFor="dluhyNezajistene" className="block text-[10px] font-bold text-indigo-700 mb-1 w-fit cursor-help border-b border-dotted border-indigo-400">Nezajištěné pohledávky věřitelů (Kč)</label>
-                    </Tooltip>
-                    <input
-                      type="number"
-                      id="dluhyNezajistene" name="dluhyNezajistene"
-                      min="0"
-                      value={dluhyNezajisteneDraft}
-                      onFocus={(e) => {
-                        selectZeroOnFocus(e);
-                        setEditingDluhyNezajistene(true);
-                      }}
-                      onClick={selectZeroOnFocus}
-                      onChange={(e) => setDluhyNezajisteneDraft(e.target.value)}
-                      onBlur={commitDluhyNezajistene}
-                      onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
-                      className="w-full p-2 bg-indigo-50 border border-indigo-200 rounded-lg font-bold text-indigo-900 text-sm"
-                    />
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <Tooltip text={"Právně přesně: Zajištěný věřitel se v rozsahu zajištění uspokojuje ze zpeněžení majetku, kterým je jeho pohledávka zajištěna. Pokud hodnota zajištění nestačí, rozdíl se může za zákonných podmínek považovat za nezajištěnou pohledávku. Toto pole je zde informativní a nevstupuje přímo do modelového procenta nezajištěných věřitelů.\n\nLidsky řečeno: Uveďte dluhy, za které ručíte konkrétním majetkem, například hypotéku zajištěnou domem. Pokud se tento majetek v oddlužení prodá, peníze z prodeje jdou přednostně na tento dluh. Pokud nestačí na celý dluh, zbytek může pokračovat jako nezajištěný dluh."}>
-                        <label htmlFor="dluhyZajistene" className="block text-[10px] font-bold text-slate-600 mb-1 w-fit cursor-help border-b border-dotted border-slate-400">Zajištěné pohledávky (Kč)</label>
-                      </Tooltip>
-                      <input type="number" onFocus={selectZeroOnFocus} onClick={selectZeroOnFocus} id="dluhyZajistene" min="0" name="dluhyZajistene" value={data.dluhyZajistene} onChange={handleInputChange} className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm" />
+                        </select>
+                      </div>
+
+                      {activeTab === 'manzele' && (
+                        <div>
+                          <Tooltip text={"Právně přesně: Zadejte odhad částky, která po případném zpeněžení majetku a souvisejících nákladech skutečně připadne nezajištěným věřitelům. Ne každý majetek musí být v oddlužení zpeněžen.\n\nLidsky řečeno: Pokud se v oddlužení bude prodávat váš majetek, odhadněte částku, která z jeho prodeje půjde na dluhy. Například peníze z prodeje auta."}>
+                            <label htmlFor="vytezekZpenezeni" className="block text-[10px] font-bold text-green-700 mb-1 w-fit cursor-help border-b border-dotted border-green-500">Výtěžek ze zpeněžení majetku (Kč)</label>
+                          </Tooltip>
+                          <input type="number" onFocus={selectZeroOnFocus} onClick={selectZeroOnFocus} id="vytezekZpenezeni" min="0" name="vytezekZpenezeni" value={data.vytezekZpenezeni} onChange={handleInputChange} className="w-full p-2 bg-green-50 border border-green-200 rounded-lg font-bold text-green-900 text-sm" />
+                        </div>
+                      )}
                     </div>
+
                     <div>
-                      <Tooltip text={"Právně přesně: Osvobození se nedotýká například zákonného výživného, náhrady škody způsobené na zdraví, škody způsobené úmyslným porušením právní povinnosti, některých peněžitých trestů nebo majetkových sankcí za úmyslný trestný čin a pohledávky insolvenčního správce na odměnu a hotové výdaje. Toto pole je informativní a nevstupuje do modelového procenta nezajištěných věřitelů.\n\nLidsky řečeno: Tyto dluhy se vám ani po úspěšném oddlužení neodpustí. Patří sem například dlužné výživné, náhrada škody na zdraví, škoda způsobená úmyslně nebo peněžitý trest za úmyslný trestný čin."}>
-                        <label htmlFor="dluhyNeosvoboditelne" className="block text-[10px] font-bold text-slate-600 mb-1 w-fit cursor-help border-b border-dotted border-slate-400">Dluhy, které se oddlužením neodpouštějí (Kč)</label>
+                      <Tooltip text={"Právně přesně: Jde o pohledávky věřitelů, které nejsou zajištěny konkrétním majetkem. Z této částky kalkulačka počítá modelovou míru uspokojení nezajištěných věřitelů.\n\nLidsky řečeno: Uveďte běžné dluhy, za které neručíte konkrétním majetkem. Typicky půjčky, úvěry, kreditní karty, kontokorenty nebo nezaplacené faktury."}>
+                        <label htmlFor="dluhyNezajistene" className="block text-[10px] font-bold text-indigo-700 mb-1 w-fit cursor-help border-b border-dotted border-indigo-400">Běžné nezajištěné dluhy (Kč)</label>
                       </Tooltip>
-                      <input type="number" onFocus={selectZeroOnFocus} onClick={selectZeroOnFocus} id="dluhyNeosvoboditelne" min="0" name="dluhyNeosvoboditelne" value={data.dluhyNeosvoboditelne} onChange={handleInputChange} className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm" />
+                      <input
+                        type="number"
+                        id="dluhyNezajistene" name="dluhyNezajistene"
+                        min="0"
+                        value={dluhyNezajisteneDraft}
+                        onFocus={(event) => {
+                          selectZeroOnFocus(event);
+                          setEditingDluhyNezajistene(true);
+                        }}
+                        onClick={selectZeroOnFocus}
+                        onChange={(event) => setDluhyNezajisteneDraft(event.target.value)}
+                        onBlur={commitDluhyNezajistene}
+                        onKeyDown={(event) => { if (event.key === 'Enter') event.currentTarget.blur(); }}
+                        className="w-full p-2 bg-indigo-50 border border-indigo-200 rounded-lg font-bold text-indigo-900 text-sm"
+                      />
                     </div>
+
+                    {activeTab === 'jednotlivec' ? (
+                      <div className="space-y-3">
+                        <label className="flex items-start gap-2.5 rounded-lg border border-slate-200 bg-slate-50 p-3 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={Boolean(data.desktopJednotlivecProdejMajetku)}
+                            onChange={(event) => handleDesktopProgressiveToggle(
+                              'desktopJednotlivecProdejMajetku',
+                              event.target.checked,
+                              { vytezekZpenezeni: 0 },
+                            )}
+                            className="mt-0.5 h-4 w-4 accent-blue-600"
+                          />
+                          <span className="text-xs font-bold text-slate-700">
+                            Počítáte v oddlužení s prodejem majetku?
+                            <span className="mt-1 block font-normal text-slate-500">Například auta nebo jiného majetku, z jehož prodeje půjdou peníze na dluhy.</span>
+                          </span>
+                        </label>
+
+                        {data.desktopJednotlivecProdejMajetku && (
+                          <div>
+                            <Tooltip text={"Právně přesně: Zadejte odhad částky, která po případném zpeněžení majetku a souvisejících nákladech skutečně připadne nezajištěným věřitelům.\n\nLidsky řečeno: Odhadněte, kolik peněz z prodeje majetku skutečně půjde na dluhy."}>
+                              <label htmlFor="vytezekZpenezeni" className="block text-[10px] font-bold text-green-700 mb-1 w-fit cursor-help border-b border-dotted border-green-500">Odhad peněz z prodeje majetku (Kč)</label>
+                            </Tooltip>
+                            <input type="number" onFocus={selectZeroOnFocus} onClick={selectZeroOnFocus} id="vytezekZpenezeni" min="0" name="vytezekZpenezeni" value={data.vytezekZpenezeni} onChange={handleInputChange} className="w-full p-2 bg-green-50 border border-green-200 rounded-lg font-bold text-green-900 text-sm" />
+                          </div>
+                        )}
+
+                        <label className="flex items-start gap-2.5 rounded-lg border border-slate-200 bg-slate-50 p-3 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={Boolean(data.desktopJednotlivecMaZajisteneDluhy)}
+                            onChange={(event) => handleDesktopProgressiveToggle(
+                              'desktopJednotlivecMaZajisteneDluhy',
+                              event.target.checked,
+                              { dluhyZajistene: 0 },
+                            )}
+                            className="mt-0.5 h-4 w-4 accent-blue-600"
+                          />
+                          <span className="text-xs font-bold text-slate-700">
+                            Máte dluh zajištěný konkrétním majetkem?
+                            <span className="mt-1 block font-normal text-slate-500">Například hypotéku zajištěnou domem.</span>
+                          </span>
+                        </label>
+
+                        {data.desktopJednotlivecMaZajisteneDluhy && (
+                          <div>
+                            <Tooltip text={"Právně přesně: Zajištěný věřitel se v rozsahu zajištění uspokojuje ze zpeněžení majetku, kterým je jeho pohledávka zajištěna.\n\nLidsky řečeno: Uveďte přibližnou výši dluhů, za které ručíte konkrétním majetkem."}>
+                              <label htmlFor="dluhyZajistene" className="block text-[10px] font-bold text-slate-600 mb-1 w-fit cursor-help border-b border-dotted border-slate-400">Výše zajištěných dluhů (Kč)</label>
+                            </Tooltip>
+                            <input type="number" onFocus={selectZeroOnFocus} onClick={selectZeroOnFocus} id="dluhyZajistene" min="0" name="dluhyZajistene" value={data.dluhyZajistene} onChange={handleInputChange} className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm" />
+                          </div>
+                        )}
+
+                        <label className="flex items-start gap-2.5 rounded-lg border border-slate-200 bg-slate-50 p-3 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={Boolean(data.desktopJednotlivecMaNeosvoboditelneDluhy)}
+                            onChange={(event) => handleDesktopProgressiveToggle(
+                              'desktopJednotlivecMaNeosvoboditelneDluhy',
+                              event.target.checked,
+                              { dluhyNeosvoboditelne: 0 },
+                            )}
+                            className="mt-0.5 h-4 w-4 accent-blue-600"
+                          />
+                          <span className="text-xs font-bold text-slate-700">
+                            Máte dluhy, které se oddlužením neodpouštějí?
+                            <span className="mt-1 block font-normal text-slate-500">Například dlužné výživné, náhradu škody na zdraví nebo některé úmyslně způsobené škody.</span>
+                          </span>
+                        </label>
+
+                        {data.desktopJednotlivecMaNeosvoboditelneDluhy && (
+                          <div>
+                            <Tooltip text={"Právně přesně: Osvobození se nedotýká některých pohledávek, například zákonného výživného, náhrady škody způsobené na zdraví nebo některých škod způsobených úmyslně.\n\nLidsky řečeno: Uveďte přibližnou výši dluhů, které mohou zůstat i po úspěšném oddlužení."}>
+                              <label htmlFor="dluhyNeosvoboditelne" className="block text-[10px] font-bold text-slate-600 mb-1 w-fit cursor-help border-b border-dotted border-slate-400">Výše těchto dluhů (Kč)</label>
+                            </Tooltip>
+                            <input type="number" onFocus={selectZeroOnFocus} onClick={selectZeroOnFocus} id="dluhyNeosvoboditelne" min="0" name="dluhyNeosvoboditelne" value={data.dluhyNeosvoboditelne} onChange={handleInputChange} className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm" />
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Tooltip text={"Právně přesně: Zajištěný věřitel se v rozsahu zajištění uspokojuje ze zpeněžení majetku, kterým je jeho pohledávka zajištěna. Pokud hodnota zajištění nestačí, rozdíl se může za zákonných podmínek považovat za nezajištěnou pohledávku.\n\nLidsky řečeno: Uveďte dluhy, za které ručíte konkrétním majetkem, například hypotéku zajištěnou domem."}>
+                            <label htmlFor="dluhyZajistene" className="block text-[10px] font-bold text-slate-600 mb-1 w-fit cursor-help border-b border-dotted border-slate-400">Zajištěné pohledávky (Kč)</label>
+                          </Tooltip>
+                          <input type="number" onFocus={selectZeroOnFocus} onClick={selectZeroOnFocus} id="dluhyZajistene" min="0" name="dluhyZajistene" value={data.dluhyZajistene} onChange={handleInputChange} className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm" />
+                        </div>
+                        <div>
+                          <Tooltip text={"Právně přesně: Osvobození se nedotýká například zákonného výživného, náhrady škody způsobené na zdraví, škody způsobené úmyslným porušením právní povinnosti, některých peněžitých trestů nebo majetkových sankcí za úmyslný trestný čin a pohledávky insolvenčního správce na odměnu a hotové výdaje.\n\nLidsky řečeno: Tyto dluhy se vám ani po úspěšném oddlužení neodpustí."}>
+                            <label htmlFor="dluhyNeosvoboditelne" className="block text-[10px] font-bold text-slate-600 mb-1 w-fit cursor-help border-b border-dotted border-slate-400">Dluhy, které se oddlužením neodpouštějí (Kč)</label>
+                          </Tooltip>
+                          <input type="number" onFocus={selectZeroOnFocus} onClick={selectZeroOnFocus} id="dluhyNeosvoboditelne" min="0" name="dluhyNeosvoboditelne" value={data.dluhyNeosvoboditelne} onChange={handleInputChange} className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm" />
+                        </div>
+                      </div>
+                    )}
                   </div>
-                </div>
+                )
               )}
             </aside>
           )}
@@ -1581,7 +1668,7 @@ const HlavniKalkulackaPage = () => {
             {activeTab !== 'nastaveni' && hasActiveIncome && (
               <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
                 <p className="text-xs font-black uppercase tracking-widest text-blue-700">
-                  {activeTab === 'manzele' ? '5. Výsledek' : '3. Výsledek'}
+                  {activeTab === 'nezabavitelna' ? '3. Výsledek' : '5. Výsledek'}
                 </p>
               </div>
             )}
