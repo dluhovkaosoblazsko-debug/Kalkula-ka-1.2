@@ -1,0 +1,15 @@
+/* A dark color-scheme can turn Chromium's printed page margins black even
+   when body is white. Screen colors stay untouched. */
+@media print {
+  html {
+    color-scheme: light !important;
+  }
+  .report-footer,
+  .report-warning {
+    break-inside: avoid;
+  }
+  .report-section > h3,
+  .report-subsection > h4 {
+    break-after: avoid;
+  }
+}
