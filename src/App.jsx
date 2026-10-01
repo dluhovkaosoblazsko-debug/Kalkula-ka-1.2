@@ -1,5 +1,6 @@
 import React from 'react'
 import HlavniKalkulackaPage from './kalkulacka/HlavniKalkulackaPage'
+import './print.css'
 
 const App = () => (
   <div className="dashboard-shell">
@@ -14,7 +15,7 @@ const App = () => (
       <div className="dashboard-topbar-actions">
         <span className="dashboard-status">
           <span className="dashboard-status-dot" />
-          Údaje se průběžně ukládají pouze v tomto zařízení
+          Výpočet probíhá v tomto prohlížeči
         </span>
       </div>
     </header>

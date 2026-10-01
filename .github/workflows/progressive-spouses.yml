@@ -6,10 +6,13 @@ on:
     branches: [main]
 permissions:
   contents: read
+concurrency:
+  group: calculator-checks-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
         with:
@@ -20,24 +23,52 @@ jobs:
           cache: npm
       - name: Install dependencies without desktop installers
         run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: Existing reference calculations
-        run: npm run verify
-      - name: Progressive form scenarios and server rendering
-        run: node scripts/verifyProgressiveSpouses.mjs --render
+      - name: Reference, independent numerical and audit checks
+        run: |
+          mkdir -p test-results
+          set -o pipefail
+          npm run verify | tee test-results/reference.log
+          node scripts/verifyNumericalModel.mjs | tee test-results/numerical.log
+          node scripts/verifyAuditRepairs.mjs --render | tee test-results/audit.log
       - name: Production build
         run: npm run build
       - name: Record tested revision
         run: git rev-parse HEAD > dist/build-commit.txt
-      - name: Save verified build for review
+      - name: Install isolated browser test environment
+        timeout-minutes: 4
+        run: |
+          python3 -m venv /tmp/calculator-browser-tests
+          /tmp/calculator-browser-tests/bin/pip install --only-binary=:all: --timeout 25 --retries 2 playwright==1.57.0
+          browser=''
+          for candidate in google-chrome chromium chromium-browser google-chrome-stable; do
+            if command -v "$candidate" >/dev/null 2>&1; then
+              browser="$(command -v "$candidate")"
+              break
+            fi
+          done
+          if [ -n "$browser" ]; then
+            "$browser" --version
+            echo "CHROMIUM_EXECUTABLE=$browser" >> "$GITHUB_ENV"
+          else
+            /tmp/calculator-browser-tests/bin/python -m playwright install --with-deps chromium
+          fi
+      - name: Browser workflows, output agreement and print regression tests
+        run: |
+          set -o pipefail
+          /tmp/calculator-browser-tests/bin/python scripts/verifyBrowserRepairs.py . test-results/browser | tee test-results/browser.log
+      - name: Save build and test evidence
+        if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: verified-calculator
+          name: calculator-checks
           retention-days: 7
-          if-no-files-found: error
+          if-no-files-found: warn
           path: |
             dist/
             src/
             scripts/
+            docs/
+            test-results/
             package.json
             package-lock.json
             vite.config.js
