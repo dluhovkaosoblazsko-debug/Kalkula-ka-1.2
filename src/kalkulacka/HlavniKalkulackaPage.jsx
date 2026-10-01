@@ -965,14 +965,12 @@ const HlavniKalkulackaPage = () => {
         formatKc={formatKc}
       />
 
-      {(activeTab !== 'manzele' || hasActiveIncome) && (
-        <PrintableCalculationReport
-          mode={activeTab}
-          data={data}
-          results={results}
-          params={params}
-        />
-      )}
+      <PrintableCalculationReport
+        mode={activeTab}
+        data={data}
+        results={results}
+        params={params}
+      />
 
       <div className="desktop-calculator max-w-6xl mx-auto print:hidden">
         <header className="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200 pb-4 print:pb-2">
