@@ -524,7 +524,7 @@ const MobileKalkulackaWizard = ({
         {coverage.deficitAfterDebtorPromise > 0 && (
           <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
             <p className="text-sm font-black text-slate-800">
-              Po započtení vlastního příslibu stále chybí {formatKc(coverage.deficitAfterDebtorPromise)}.
+              Zbývá pokrýt {formatKc(coverage.deficitAfterDebtorPromise)}.
             </p>
             <Choice
               checked={thirdEnabled}
