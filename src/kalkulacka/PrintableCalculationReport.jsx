@@ -80,6 +80,8 @@ export const buildCalculationShareText = ({ mode, data, results }) => {
     return [
       'Orientační výpočet exekuční srážky 2026',
       `Postižitelný příjem: ${formatKc(results.totalPrijem1)}`,
+      `Počet exekucí: ${data.pocetExekuci === '4+' ? '4 a více' : '1 až 3'}`,
+      `Druh dluhu: ${data.typPohledavky === 'prednostni' ? 'přednostní' : data.typPohledavky === 'vyzivne' ? 'výživné' : 'nepřednostní'}`,
       `Nezabavitelná částka: ${formatKc(results.ex.legalniMinimum)}`,
       `Orientační srážka: ${formatKc(results.ex.srazka)}`,
       `Po srážce může zůstat: ${formatKc(results.ex.kVyplate)}`,
@@ -101,6 +103,8 @@ export const buildCalculationShareText = ({ mode, data, results }) => {
   const lines = [
     `Orientační výpočet – ${modeTitle(mode)} 2026`,
     `Postižitelný příjem celkem: ${formatKc(income)}`,
+    `Nezajištěné dluhy: ${formatKc(data.dluhyNezajistene)}`,
+    `Délka oddlužení: ${data.delkaOddluzeni} měsíců`,
     `Zákonná měsíční srážka: ${formatKc(deduction)}`,
   ]
 
@@ -177,7 +181,8 @@ const PrintableCalculationReport = ({ mode, data, results, params }) => {
             <>
               <Row label="Vyživované osoby" value={data.vyzivovaneOsoby1} />
               <Row label="Osoby s vymáhaným výživným" value={data.osobySVykonemProVyzivne1} />
-              <Row label="Běžné výživné" value={formatKc(data.bezneMesicniVyzivne1)} />
+              <Row label="Manžel/partner relevantní pro nezabavitelnou částku" value={data.partnerProNezabavitelnou1 ? 'Ano' : 'Ne'} />
+              {!exekuce && <Row label="Běžné výživné" value={formatKc(data.bezneMesicniVyzivne1)} />}
               <Row label="Jiné příjmy chráněné před srážkami" value={formatKc(data.chranenePrijmy1)} />
             </>
           )}
