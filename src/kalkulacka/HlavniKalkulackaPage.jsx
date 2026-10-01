@@ -453,6 +453,8 @@ const createDefaultData = () => ({
 
 const HlavniKalkulackaPage = () => {
   const [activeTab, setActiveTab] = useState('jednotlivec');
+  const [lastPublicTab, setLastPublicTab] = useState('jednotlivec');
+  const [desktopStarted, setDesktopStarted] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
 
   // --- LEGISLATIVNÍ DATA (Stav pro výplaty v roce 2026) ---
@@ -818,7 +820,33 @@ const HlavniKalkulackaPage = () => {
     setDluhyNezajisteneDraft('0');
     setEditingDluhyNezajistene(false);
     setActiveTab('jednotlivec');
+    setLastPublicTab('jednotlivec');
+    setDesktopStarted(false);
   };
+
+  const handleDesktopModeSelect = (mode) => {
+    setActiveTab(mode);
+    setLastPublicTab(mode);
+    setDesktopStarted(true);
+  };
+
+  const handleDesktopTabChange = (mode) => {
+    setActiveTab(mode);
+    setLastPublicTab(mode);
+  };
+
+  const handleExpertSettingsToggle = () => {
+    if (activeTab === 'nastaveni') {
+      setActiveTab(lastPublicTab);
+      return;
+    }
+    setLastPublicTab(activeTab);
+    setActiveTab('nastaveni');
+  };
+
+  const hasActiveIncome = activeTab === 'manzele'
+    ? (results.totalPrijem1 + results.totalPrijem2) > 0
+    : results.totalPrijem1 > 0;
 
   const handlePrint = () => window.print();
 
@@ -898,16 +926,18 @@ const HlavniKalkulackaPage = () => {
             </h1>
           </div>
           <div className="flex flex-wrap justify-end gap-2 print:hidden">
-            {activeTab !== 'nastaveni' && (
+            {desktopStarted && activeTab !== 'nastaveni' && hasActiveIncome && (
               <button onClick={handlePrint} className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-50 transition-colors shadow-sm">
                 <Printer size={14} /> Tisk / PDF
               </button>
             )}
-            <button onClick={handleResetCalculation} className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-50 transition-colors shadow-sm">
-              <RotateCcw size={14} /> Nový výpočet
-            </button>
+            {desktopStarted && activeTab !== 'nastaveni' && (
+              <button onClick={handleResetCalculation} className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-50 transition-colors shadow-sm">
+                <RotateCcw size={14} /> Nový výpočet
+              </button>
+            )}
             <button
-              onClick={() => setActiveTab(activeTab === 'nastaveni' ? 'jednotlivec' : 'nastaveni')}
+              onClick={handleExpertSettingsToggle}
               className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-500 rounded-lg text-xs font-bold hover:bg-slate-50 hover:text-slate-700 transition-colors"
             >
               <Settings size={14} /> {activeTab === 'nastaveni' ? 'Zpět ke kalkulačce' : 'Odborné nastavení'}
@@ -915,7 +945,49 @@ const HlavniKalkulackaPage = () => {
           </div>
         </header>
 
-        {activeTab !== 'nastaveni' && (
+        {!desktopStarted && activeTab !== 'nastaveni' && (
+          <section className="mb-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <p className="text-xs font-black uppercase tracking-widest text-blue-700">Začněte tady</p>
+            <h2 className="mt-2 text-2xl font-black text-slate-900">Co chcete spočítat?</h2>
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">
+              Vyberte svou situaci. Až potom se zobrazí potřebná pole a výsledek.
+            </p>
+
+            <div className="mt-5 grid gap-4 lg:grid-cols-3">
+              <button
+                type="button"
+                onClick={() => handleDesktopModeSelect('jednotlivec')}
+                className="rounded-xl border border-blue-200 bg-blue-50 p-5 text-left transition hover:border-blue-400 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              >
+                <span className="mb-3 grid h-10 w-10 place-items-center rounded-lg bg-white text-blue-700"><User size={20} /></span>
+                <strong className="block text-base text-slate-900">Oddlužení jednotlivce</strong>
+                <span className="mt-1 block text-sm leading-relaxed text-slate-600">Kolik se může měsíčně srážet, kolik vám zůstane a zda příjem stačí pro orientační minimum.</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleDesktopModeSelect('manzele')}
+                className="rounded-xl border border-indigo-200 bg-indigo-50 p-5 text-left transition hover:border-indigo-400 hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              >
+                <span className="mb-3 grid h-10 w-10 place-items-center rounded-lg bg-white text-indigo-700"><Users size={20} /></span>
+                <strong className="block text-base text-slate-900">Společné oddlužení manželů</strong>
+                <span className="mt-1 block text-sm leading-relaxed text-slate-600">Samostatné srážky obou manželů a společný orientační výsledek.</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleDesktopModeSelect('nezabavitelna')}
+                className="rounded-xl border border-rose-200 bg-rose-50 p-5 text-left transition hover:border-rose-400 hover:bg-rose-100 focus:outline-none focus:ring-2 focus:ring-rose-400"
+              >
+                <span className="mb-3 grid h-10 w-10 place-items-center rounded-lg bg-white text-rose-700"><ShieldAlert size={20} /></span>
+                <strong className="block text-base text-slate-900">Exekuční srážka</strong>
+                <span className="mt-1 block text-sm leading-relaxed text-slate-600">Kolik vám může být z příjmu sraženo a kolik vám může orientačně zůstat.</span>
+              </button>
+            </div>
+          </section>
+        )}
+
+        {desktopStarted && activeTab !== 'nastaveni' && (
           <nav className="flex flex-wrap p-1 bg-slate-200 rounded-xl mb-6 print:hidden" aria-label="Typ výpočtu">
             {[
               { id: 'jednotlivec', label: 'Oddlužení (Jednotlivec)', icon: User },
@@ -924,7 +996,7 @@ const HlavniKalkulackaPage = () => {
             ].map(tab => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => handleDesktopTabChange(tab.id)}
                 aria-pressed={activeTab === tab.id}
                 className={`flex-1 min-w-[140px] flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-bold transition-all ${
                   activeTab === tab.id ? 'bg-white shadow text-blue-700' : 'text-slate-600 hover:text-slate-900'
@@ -936,6 +1008,7 @@ const HlavniKalkulackaPage = () => {
           </nav>
         )}
 
+        {(desktopStarted || activeTab === 'nastaveni') && (
         <div className="grid lg:grid-cols-12 gap-6 print:block">
           {/* LEVÝ PANEL - Vstupy */}
           {activeTab !== 'nastaveni' && (
@@ -945,7 +1018,7 @@ const HlavniKalkulackaPage = () => {
               {activeTab === 'manzele' && (
               <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 space-y-3 border-t-4 border-t-indigo-400">
                 <h3 className="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-1 flex items-center gap-2">
-                  <Users size={14}/> {activeTab === 'manzele' ? 'Společná situace rodiny' : 'Rodinná situace'}
+                  <Users size={14}/> 1. Společná situace rodiny
                 </h3>
                 
                 <div className="grid grid-cols-2 gap-3">
@@ -971,9 +1044,15 @@ const HlavniKalkulackaPage = () => {
               {/* SEKCE 2: DLUŽNÍK 1 */}
               <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 space-y-3 border-t-4 border-t-blue-400">
                 <h3 className="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-1 flex items-center gap-2">
-                  <User size={14}/> {activeTab === 'manzele' ? 'Příjmy a status: Manžel A' : 'Příjmy a status dlužníka'}
+                  <User size={14}/> {activeTab === 'manzele' ? '2. Příjmy a status: Manžel A' : '1. Začněte svým příjmem'}
                 </h3>
                 
+                {activeTab !== 'manzele' && (
+                  <p className="rounded-lg border border-blue-200 bg-blue-50 p-2.5 text-xs leading-relaxed text-blue-900">
+                    Nejdřív zadejte alespoň jeden postižitelný příjem. Potom doplňte rodinnou situaci a další údaje níže.
+                  </p>
+                )}
+
                 <IncomeSourcesEditor
                   sources={data.prijmy1}
                   multiplePayers={Boolean(data.vicePlatcu1)}
@@ -1056,7 +1135,7 @@ const HlavniKalkulackaPage = () => {
               {activeTab === 'manzele' && (
                 <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 space-y-3 border-t-4 border-t-purple-400">
                   <h3 className="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-1 flex items-center gap-2">
-                    <User size={14}/> Příjmy a status: Manžel B
+                    <User size={14}/> 3. Příjmy a status: Manžel B
                   </h3>
                   
                   <IncomeSourcesEditor
@@ -1112,7 +1191,7 @@ const HlavniKalkulackaPage = () => {
               {/* SEKCE 4: PARAMETRY ŘÍZENÍ A DLUHŮ */}
               {activeTab === 'nezabavitelna' ? (
                 <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 space-y-4">
-                  <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">Parametry exekuce</h3>
+                  <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">2. Nastavení exekuce</h3>
                   <div>
                      <Tooltip text={"Právně přesně: Při nejméně čtyřech současně vedených výkonech rozhodnutí nebo exekucích k vymožení splatných peněžitých pohledávek se za zákonných podmínek srážejí dvě třetiny zbytku příjmu, i když jde jinak o nepřednostní dluh. Existuje zvláštní výjimka pro některé důchodce s nízkou jednou třetinou.\n\nLidsky řečeno: Pokud proti vám běží 4 nebo více exekucí, může se vám srážet více peněz než při 1–3 exekucích. U některých důchodců platí výjimka."}>
                        <label htmlFor="pocetExekuci" className="block text-[10px] font-bold text-slate-700 mb-1 w-fit cursor-help border-b border-dotted border-slate-400">Počet souběžných exekucí</label>
@@ -1141,7 +1220,7 @@ const HlavniKalkulackaPage = () => {
                 </div>
               ) : (
                 <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 space-y-3 border-t-4 border-t-slate-400">
-                  <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">Konfigurace dluhů pro rozvrh</h3>
+                  <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">{activeTab === 'manzele' ? '4. Dluhy a majetek' : '2. Dluhy a majetek'}</h3>
                   
                   <div className="grid grid-cols-2 gap-3">
                      <div>
@@ -1251,7 +1330,25 @@ const HlavniKalkulackaPage = () => {
               </div>
             )}
 
-            {activeTab === 'nezabavitelna' && (
+            {activeTab !== 'nastaveni' && !hasActiveIncome && (
+              <div className="rounded-2xl border border-blue-200 bg-blue-50 p-6 shadow-sm">
+                <p className="text-xs font-black uppercase tracking-widest text-blue-700">Výsledek</p>
+                <h2 className="mt-2 text-xl font-black text-slate-900">Výsledek se zobrazí po zadání příjmu.</h2>
+                <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                  Začněte vlevo zadáním čistého měsíčního příjmu. Teprve potom kalkulačka zobrazí srážku, zůstatek a případnou kontrolu minima.
+                </p>
+              </div>
+            )}
+
+            {activeTab !== 'nastaveni' && hasActiveIncome && (
+              <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+                <p className="text-xs font-black uppercase tracking-widest text-blue-700">
+                  {activeTab === 'manzele' ? '5. Výsledek' : '3. Výsledek'}
+                </p>
+              </div>
+            )}
+
+            {activeTab === 'nezabavitelna' && hasActiveIncome && (
               <div className="space-y-4">
                 {(results.ex.multiPayerNeedsAllocation || results.ex.multiPayerExact) && (
                   <div className={`rounded-xl border p-3 text-xs ${results.ex.multiPayerExact ? 'border-emerald-200 bg-emerald-50 text-emerald-900' : 'border-amber-200 bg-amber-50 text-amber-900'}`}>
@@ -1362,9 +1459,9 @@ const HlavniKalkulackaPage = () => {
                   </div>
 
                   {/* VÝUKOVÝ MATEMATICKÝ BLOK - EXEKUCE */}
-                  <div className="mt-5 pt-4 border-t border-slate-100">
-                    <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-2">Matematický postup výpočtu:</p>
-                    <div className="space-y-1.5 text-[10px] text-slate-600 font-mono bg-slate-50 p-3 rounded border border-slate-100 overflow-x-auto whitespace-nowrap">
+                  <details className="mt-5 pt-4 border-t border-slate-100">
+                    <summary className="cursor-pointer text-sm font-black text-slate-700">Jak jsme k výsledku došli?</summary>
+                    <div className="mt-3 space-y-1.5 text-[10px] text-slate-600 font-mono bg-slate-50 p-3 rounded border border-slate-100 overflow-x-auto whitespace-nowrap">
                       {renderMathStep1(results.ex, params)}
                       <p>2. <strong className="text-slate-700">Část příjmu nad nezabavitelnou částku:</strong> {results.ex.prijemPredSrazkou.toLocaleString()} (Příjem) - {results.ex.legalniMinimum.toLocaleString()} (Nezabavitelná částka) = {Math.max(0, results.ex.zbytekMzdyRaw).toLocaleString()} Kč</p>
                       {results.ex.zbytekMzdyRaw > 0 && (
@@ -1375,12 +1472,12 @@ const HlavniKalkulackaPage = () => {
                         </>
                       )}
                     </div>
-                  </div>
+                  </details>
                 </div>
               </div>
             )}
 
-            {activeTab === 'jednotlivec' && (
+            {activeTab === 'jednotlivec' && hasActiveIncome && (
               <div className="space-y-4">
                 <div className="hidden print:block mb-6">
                   <h2 className="text-2xl font-bold border-b pb-2">Report: Prognóza oddlužení (Jednotlivec)</h2>
@@ -1462,8 +1559,9 @@ const HlavniKalkulackaPage = () => {
 
                 <div className="bg-white p-5 rounded-xl border border-slate-200 print:break-inside-avoid">
                    {/* VÝUKOVÝ MATEMATICKÝ BLOK - INSOLVENCE JEDNOTLIVEC */}
-                   <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-2">Matematický postup výpočtu srážky:</p>
-                   <div className="space-y-1.5 text-[10px] text-slate-600 font-mono bg-slate-50 p-3 rounded border border-slate-100 overflow-x-auto whitespace-nowrap mb-6">
+                   <details>
+                     <summary className="cursor-pointer text-sm font-black text-slate-700">Jak jsme k výsledku došli?</summary>
+                     <div className="mt-3 space-y-1.5 text-[10px] text-slate-600 font-mono bg-slate-50 p-3 rounded border border-slate-100 overflow-x-auto whitespace-nowrap mb-6">
                      {renderMathStep1(results.insJ, params)}
                      <p>2. <strong className="text-slate-700">Část příjmu nad nezabavitelnou částku:</strong> {results.insJ.prijemPredSrazkou.toLocaleString()} (Příjem) - {results.insJ.legalniMinimum.toLocaleString()} (Nezabavitelná částka) = {Math.max(0, results.insJ.zbytekMzdyRaw).toLocaleString()} Kč</p>
                      {results.insJ.zbytekMzdyRaw > 0 && (
@@ -1473,12 +1571,13 @@ const HlavniKalkulackaPage = () => {
                          <p>5. <strong className="text-slate-700">K výplatě:</strong> {results.insJ.prijemPredSrazkou.toLocaleString()} (Příjem) - {results.insJ.srazka.toLocaleString()} (Srážka){data.chranenePrijmy1 > 0 ? ` + ${data.chranenePrijmy1.toLocaleString()} (jiné příjmy chráněné před srážkami)` : ''} = {results.insJ.kVyplate.toLocaleString()} Kč</p>
                        </>
                      )}
-                   </div>
+                     </div>
+                   </details>
 
                    <div className="bg-slate-900 p-6 rounded-xl shadow-sm text-white flex flex-col justify-between print:bg-white print:border print:text-black">
                      <div>
                        <Tooltip text={"Právně přesně: Jde o orientační modelovou míru uspokojení zadaných nezajištěných pohledávek. Nejde o soudem stanovený cíl ani o záruku výsledku. Skutečné plnění ovlivní zejména výše zjištěných pohledávek, změny příjmů, další prioritní pohledávky a náklady řízení. V této verzi se do dlouhodobého procenta nezapočítává závazný příslib ani plnění třetí osoby; ty slouží ke kontrole minimálního plnění.\n\nLidsky řečeno: Ukazuje odhad, kolik procent běžných dluhů byste při zadaných údajích mohli během oddlužení zaplatit. Skutečný výsledek se může změnit."}>
-                         <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1 cursor-help border-b border-dotted border-blue-500 w-fit print:text-gray-600 print:border-none">Modelové uspokojení</p>
+                         <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1 cursor-help border-b border-dotted border-blue-500 w-fit print:text-gray-600 print:border-none">Orientační odhad splacení běžných dluhů</p>
                        </Tooltip>
                        <p className="text-[11px] text-slate-400 mb-3 print:text-gray-800">Nezajištěných věřitelů (Rozvrh {data.delkaOddluzeni} měsíců + Zpeněžení {data.vytezekZpenezeni} Kč)</p>
                      </div>
@@ -1508,7 +1607,7 @@ const HlavniKalkulackaPage = () => {
               </div>
             )}
 
-            {activeTab === 'manzele' && (
+            {activeTab === 'manzele' && hasActiveIncome && (
               <div className="space-y-4">
                 <div className="hidden print:block mb-6">
                   <h2 className="text-2xl font-bold border-b pb-2">Report: Prognóza oddlužení (Manželé)</h2>
@@ -1595,7 +1694,7 @@ const HlavniKalkulackaPage = () => {
                    <div className="bg-slate-900 p-6 rounded-xl shadow-sm text-white flex flex-col justify-between print:bg-white print:border print:text-black">
                      <div>
                        <Tooltip text={"Právně přesně: Jde o orientační modelovou míru uspokojení zadaných nezajištěných pohledávek. Nejde o soudem stanovený cíl ani o záruku výsledku. Skutečné plnění ovlivní zejména výše zjištěných pohledávek, změny příjmů, další prioritní pohledávky a náklady řízení. V této verzi se do dlouhodobého procenta nezapočítává závazný příslib ani plnění třetí osoby; ty slouží ke kontrole minimálního plnění.\n\nLidsky řečeno: Ukazuje odhad, kolik procent běžných dluhů byste při zadaných údajích mohli během oddlužení zaplatit. Skutečný výsledek se může změnit."}>
-                         <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1 cursor-help border-b border-dotted border-blue-500 w-fit print:text-gray-600 print:border-none">Modelové uspokojení</p>
+                         <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1 cursor-help border-b border-dotted border-blue-500 w-fit print:text-gray-600 print:border-none">Orientační odhad splacení běžných dluhů</p>
                        </Tooltip>
                        <p className="text-[11px] text-slate-400 mb-3 print:text-gray-800">Společné dluhy rodiny ({data.delkaOddluzeni} měs. + Zpeněžení {data.vytezekZpenezeni} Kč)</p>
                      </div>
@@ -1623,11 +1722,14 @@ const HlavniKalkulackaPage = () => {
               </div>
             )}
 
-            <div className="mt-8 p-4 bg-slate-100 rounded-xl border border-slate-200 text-[10px] text-slate-500 leading-relaxed print:text-black print:border-none print:bg-transparent">
-              <strong>Doložka k výsledku:</strong> Kalkulačka pracuje s právním stavem pro příjmy vyplácené v roce 2026 a poskytuje orientační výsledek. U exekucí nerozpočítává pořadí několika souběžných pohledávek mezi jednotlivé věřitele. Při více plátcích je přesný výpočet možný pouze tehdy, jsou-li zadány části nezabavitelné částky určené jednotlivým plátcům; bez nich je výsledek označen jako orientační. U oddlužení je míra uspokojení modelová a nezohledňuje všechny náklady řízení, budoucí změny příjmů ani všechny další prioritní pohledávky. Kalkulačka neposuzuje skutečnou udržitelnost závazného příslibu, platnost závazku třetí osoby ani to, zda soud oddlužení povolí nebo schválí.
-            </div>
+            {activeTab !== 'nastaveni' && hasActiveIncome && (
+              <div className="mt-8 p-4 bg-slate-100 rounded-xl border border-slate-200 text-[10px] text-slate-500 leading-relaxed print:text-black print:border-none print:bg-transparent">
+                <strong>Doložka k výsledku:</strong> Kalkulačka pracuje s právním stavem pro příjmy vyplácené v roce 2026 a poskytuje orientační výsledek. U exekucí nerozpočítává pořadí několika souběžných pohledávek mezi jednotlivé věřitele. Při více plátcích je přesný výpočet možný pouze tehdy, jsou-li zadány části nezabavitelné částky určené jednotlivým plátcům; bez nich je výsledek označen jako orientační. U oddlužení je míra uspokojení modelová a nezohledňuje všechny náklady řízení, budoucí změny příjmů ani všechny další prioritní pohledávky. Kalkulačka neposuzuje skutečnou udržitelnost závazného příslibu, platnost závazku třetí osoby ani to, zda soud oddlužení povolí nebo schválí.
+              </div>
+            )}
           </main>
         </div>
+        )}
       </div>
     </div>
   );
