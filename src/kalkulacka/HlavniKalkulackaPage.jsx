@@ -7,17 +7,38 @@ import { DEFAULT_2026_PARAMS, calculateCreditorSatisfaction, calculateDebtorProm
 import MobileKalkulackaWizard from './MobileKalkulackaWizard';
 import PrintableCalculationReport from './PrintableCalculationReport';
 
-// --- POMOCNÁ KOMPONENTA PRO TOOLTIPY ---
-const Tooltip = ({ children, text }) => (
-  <div className="group relative flex items-center gap-1.5 w-fit cursor-help">
-    {children}
-    <Info size={13} className="text-slate-400 group-hover:text-blue-500 transition-colors shrink-0 print:hidden" />
-    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-80 max-w-[calc(100vw-2rem)] p-3 bg-slate-800 text-white text-[11px] font-medium rounded-lg shadow-xl z-50 text-left whitespace-pre-line pointer-events-none print:hidden leading-snug">
-      {text}
-      <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800"></div>
+// --- POMOCNÁ KOMPONENTA PRO VYSVĚTLIVKY ---
+const Tooltip = ({ children, text }) => {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="group relative flex items-center gap-1.5 w-fit">
+      {children}
+      <button
+        type="button"
+        aria-label={open ? 'Skrýt vysvětlení' : 'Zobrazit vysvětlení'}
+        aria-expanded={open}
+        onClick={() => setOpen((value) => !value)}
+        onKeyDown={(event) => {
+          if (event.key === 'Escape') {
+            setOpen(false);
+            event.currentTarget.blur();
+          }
+        }}
+        className="shrink-0 rounded p-0.5 text-slate-400 transition-colors hover:text-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-400 print:hidden"
+      >
+        <Info size={14} aria-hidden="true" />
+      </button>
+      <div
+        role="tooltip"
+        className={`absolute bottom-full left-1/2 z-50 mb-2 w-80 max-w-[calc(100vw-2rem)] -translate-x-1/2 whitespace-pre-line rounded-lg bg-slate-800 p-3 text-left text-xs font-medium leading-snug text-white shadow-xl print:hidden ${open ? 'block' : 'hidden group-hover:block group-focus-within:block'}`}
+      >
+        {text}
+        <div className="absolute left-1/2 top-full -translate-x-1/2 border-4 border-transparent border-t-slate-800" />
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 
 const colorMap = {
@@ -375,6 +396,56 @@ const MinimumCoveragePanel = ({ coverage, data, onToggle, onAmountChange, onValu
     </section>
   );
 };
+const INTEGER_DATA_FIELDS = new Set([
+  'spolecneDeti',
+  'vyzivovaneOsoby1',
+  'vyzivovaneOsoby2',
+  'osobySVykonemProVyzivne1',
+  'osobySVykonemProVyzivne2',
+]);
+
+const createDefaultData = () => ({
+  prijmy1: [{ id: 'p1-mzda', typ: 'mzda', castka: 0, pridelenaNezabavitelna: '' }],
+  prijmy2: [{ id: 'p2-mzda', typ: 'mzda', castka: 0, pridelenaNezabavitelna: '' }],
+  // Legacy pole zůstávají kvůli migraci starších uložených dat.
+  prijemMzda1: 0,
+  prijemDuchod1: 0,
+  prijemDalsi1: 0,
+  prijemMzda2: 0,
+  prijemDuchod2: 0,
+  prijemDalsi2: 0,
+  chranenePrijmy1: 0,
+  chranenePrijmy2: 0,
+  vicePlatcu1: false,
+  vicePlatcu2: false,
+  spolecneDeti: 0,
+  vyzivovaneOsoby1: 0,
+  osobySVykonemProVyzivne1: 0,
+  partnerProNezabavitelnou1: false,
+  bezneMesicniVyzivne1: 0,
+  povolitPrislibDluznika1: false,
+  zakladniPotreby1: '',
+  zavaznyPrislib1: '',
+  povolitPlneniTretiOsoby1: false,
+  pravidelnePlneniTretiOsoby1: '',
+  vyzivovaneOsoby2: 0,
+  osobySVykonemProVyzivne2: 0,
+  bezneMesicniVyzivne2: 0,
+  povolitPrislibDluznikaM: false,
+  zakladniPotrebyM: '',
+  zavaznyPrislibM: '',
+  povolitPlneniTretiOsobyM: false,
+  pravidelnePlneniTretiOsobyM: '',
+  typPohledavky: 'neprednostni',
+  pocetExekuci: '1-3',
+  uplatnitPausalPlatce: false,
+  delkaOddluzeni: 36,
+  dluhyNezajistene: 0,
+  dluhyZajistene: 0,
+  dluhyNeosvoboditelne: 0,
+  vytezekZpenezeni: 0,
+});
+
 const HlavniKalkulackaPage = () => {
   const [activeTab, setActiveTab] = useState('jednotlivec');
   const [isLoaded, setIsLoaded] = useState(false);
@@ -392,59 +463,7 @@ const HlavniKalkulackaPage = () => {
 
   // --- VSTUPNÍ DATA ---
   const [data, setData] = useState(() => {
-    const defaultData = {
-      // Příjmy 1
-      prijemMzda1: 200000,
-      prijemDuchod1: 0,
-      prijemDalsi1: 0,
-      chranenePrijmy1: 0, 
-      
-      // Příjmy 2
-      prijemMzda2: 25000,
-      prijemDuchod2: 0,
-      prijemDalsi2: 0,
-      
-      // Domácnost
-      spolecneDeti: 2,
-      
-      // Parametry dlužníka 1
-      vyzivovaneOsoby1: 0, 
-      osobySVykonemProVyzivne1: 0, 
-      // Jeden zjednodušený údaj pro započtení manžela/partnera u jednotlivce.
-      // Pokud má rozhodný důchod sám dlužník, checkbox znamená pouze existenci manžela/partnera.
-      // Pokud dlužník rozhodný důchod nemá, checkbox znamená manžela/partnera s rozhodným důchodem.
-      partnerProNezabavitelnou1: false,
-      bezneMesicniVyzivne1: 0,
-      // Doplňkové zdroje pro krytí minima oddlužení (jednotlivec)
-      povolitPrislibDluznika1: false,
-      zakladniPotreby1: '',
-      zavaznyPrislib1: '',
-      povolitPlneniTretiOsoby1: false,
-      pravidelnePlneniTretiOsoby1: '',
-      
-      // Parametry dlužníka 2
-      vyzivovaneOsoby2: 0,
-      osobySVykonemProVyzivne2: 0,
-      bezneMesicniVyzivne2: 0,
-      // Doplňkové zdroje pro krytí minima oddlužení (manželé)
-      povolitPrislibDluznikaM: false,
-      zakladniPotrebyM: '',
-      zavaznyPrislibM: '',
-      povolitPlneniTretiOsobyM: false,
-      pravidelnePlneniTretiOsobyM: '',
-
-      // Exekuční parametry
-      typPohledavky: 'neprednostni', 
-      pocetExekuci: '1-3',
-      uplatnitPausalPlatce: false,
-      
-      // Insolvenční parametry a dluhy
-      delkaOddluzeni: 36,
-      dluhyNezajistene: 600000,
-      dluhyZajistene: 0,
-      dluhyNeosvoboditelne: 0, 
-      vytezekZpenezeni: 0, 
-    };
+    const defaultData = createDefaultData();
     try {
       const saved = localStorage.getItem('insCalcData2026_v10');
       if (!saved) return defaultData;
