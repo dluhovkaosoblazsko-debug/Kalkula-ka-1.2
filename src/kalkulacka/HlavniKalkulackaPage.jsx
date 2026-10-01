@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { DEFAULT_2026_PARAMS, calculateCreditorSatisfaction, calculateDebtorPromiseLimit, calculateMinimumPaymentCoverage, calculateWageDeduction, getMinimumInsolvencyPayment } from '../lib/calculations2026';
 import MobileKalkulackaWizard from './MobileKalkulackaWizard';
+import PrintableCalculationReport from './PrintableCalculationReport';
 
 // --- POMOCNÁ KOMPONENTA PRO TOOLTIPY ---
 const Tooltip = ({ children, text }) => (
@@ -829,7 +830,14 @@ const HlavniKalkulackaPage = () => {
         formatKc={formatKc}
       />
 
-      <div className="hidden md:block print:block max-w-6xl mx-auto">
+      <PrintableCalculationReport
+        mode={activeTab}
+        data={data}
+        results={results}
+        params={params}
+      />
+
+      <div className="hidden md:block print:hidden max-w-6xl mx-auto">
         <header className="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200 pb-4 print:pb-2">
           <div>
             <div className="flex flex-wrap items-center gap-2 mb-2 print:hidden">
@@ -840,11 +848,13 @@ const HlavniKalkulackaPage = () => {
               <Calculator className="text-blue-600 print:text-black" /> Kalkulačka srážek a oddlužení
             </h1>
           </div>
-          <div className="flex gap-2 print:hidden">
-            <button onClick={handlePrint} className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-50 transition-colors shadow-sm">
-              <Printer size={14} /> Tisk / PDF
-            </button>
-          </div>
+          {activeTab !== 'nastaveni' && (
+            <div className="flex gap-2 print:hidden">
+              <button onClick={handlePrint} className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-50 transition-colors shadow-sm">
+                <Printer size={14} /> Tisk / PDF
+              </button>
+            </div>
+          )}
         </header>
 
         <nav className="flex flex-wrap p-1 bg-slate-200 rounded-xl mb-6 print:hidden">
