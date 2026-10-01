@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useId, useMemo, useState } from 'react'
 import { ChevronLeft, ChevronRight, Printer, Share2, ShieldAlert, User, Users } from 'lucide-react'
 import { buildCalculationShareText } from './PrintableCalculationReport'
 
@@ -32,24 +32,30 @@ const Section = ({ title, children, note }) => (
   </section>
 )
 
-const NumberField = ({ label, value, onChange, help, min = 0, max, disabled = false, placeholder }) => (
-  <div>
-    <label className={labelClass}>{label}</label>
-    <input
-      type="number"
-      min={min}
-      max={max}
-      value={value ?? ''}
-      onFocus={selectZeroOnFocus}
-      onClick={selectZeroOnFocus}
-      onChange={(event) => onChange(event.target.value)}
-      disabled={disabled}
-      placeholder={placeholder}
-      className={inputClass + (disabled ? ' cursor-not-allowed opacity-50' : '')}
-    />
-    {help && <p className="mt-1.5 text-xs leading-relaxed text-slate-500">{help}</p>}
-  </div>
-)
+const NumberField = ({ label, value, onChange, help, min = 0, max, step = 'any', disabled = false, placeholder }) => {
+  const id = useId()
+
+  return (
+    <div>
+      <label htmlFor={id} className={labelClass}>{label}</label>
+      <input
+        id={id}
+        type="number"
+        min={min}
+        max={max}
+        step={step}
+        value={value ?? ''}
+        onFocus={selectZeroOnFocus}
+        onClick={selectZeroOnFocus}
+        onChange={(event) => onChange(event.target.value)}
+        disabled={disabled}
+        placeholder={placeholder}
+        className={inputClass + (disabled ? ' cursor-not-allowed opacity-50' : '')}
+      />
+      {help && <p className="mt-1.5 text-xs leading-relaxed text-slate-500">{help}</p>}
+    </div>
+  )
+}
 
 const Choice = ({ checked, onChange, children, help }) => (
   <label className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
@@ -120,8 +126,9 @@ const MobileIncomeEditor = ({
 
           <div className="mt-3 space-y-3">
             <div>
-              <label className={labelClass}>Typ příjmu</label>
+              <label htmlFor={`${source.id}-typ`} className={labelClass}>Typ příjmu</label>
               <select
+                id={`${source.id}-typ`}
                 value={source.typ}
                 onChange={(event) => update(source.id, { typ: event.target.value })}
                 className={inputClass}
@@ -180,6 +187,7 @@ const MobileKalkulackaWizard = ({
   commitDluhyNezajistene,
   handleIncomeSourcesChange,
   handleMultiplePayersChange,
+  onReset,
   formatKc,
 }) => {
   const [step, setStep] = useState('mode')
@@ -226,8 +234,20 @@ const MobileKalkulackaWizard = ({
     if (step !== 'mode') window.scrollTo({ top: 0, behavior: 'smooth' })
   }, [step])
 
+  const integerFields = new Set([
+    'spolecneDeti',
+    'vyzivovaneOsoby1',
+    'vyzivovaneOsoby2',
+    'osobySVykonemProVyzivne1',
+    'osobySVykonemProVyzivne2',
+  ])
+
   const setNumber = (key, value) => {
-    setData((prev) => ({ ...prev, [key]: Math.max(0, Number(value) || 0) }))
+    const parsed = Math.max(0, Number(value) || 0)
+    setData((prev) => ({
+      ...prev,
+      [key]: integerFields.has(key) ? Math.floor(parsed) : parsed,
+    }))
   }
 
   const setBool = (key, checked) => {
@@ -329,6 +349,13 @@ const MobileKalkulackaWizard = ({
         <span className="inline-flex rounded-full bg-amber-100 px-3 py-1 text-xs font-black text-amber-800">ORIENTAČNÍ VÝPOČET · 2026</span>
         <h1 className="mt-3 text-3xl font-black leading-tight text-slate-900">Co chcete spočítat?</h1>
         <p className="mt-2 text-sm leading-relaxed text-slate-600">Vyberte situaci. Další otázky se zobrazí postupně.</p>
+        <button
+          type="button"
+          onClick={onReset}
+          className="mt-3 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-bold text-slate-600"
+        >
+          Nový výpočet / vymazat údaje
+        </button>
       </div>
 
       <button
@@ -364,6 +391,7 @@ const MobileKalkulackaWizard = ({
     <Section title="Rodinná situace" note="Tyto údaje ovlivňují nezabavitelnou částku.">
       <NumberField
         label="Vyživované osoby"
+            step="1"
         value={data.vyzivovaneOsoby1}
         onChange={(value) => setNumber('vyzivovaneOsoby1', value)}
         help="Zadejte počet dětí a dalších osob, které vyživujete. Manžela nebo partnera sem nepočítejte."
@@ -371,6 +399,7 @@ const MobileKalkulackaWizard = ({
 
       <NumberField
         label="Z toho osoby s vymáhaným výživným"
+            step="1"
         value={data.osobySVykonemProVyzivne1}
         onChange={(value) => setNumber('osobySVykonemProVyzivne1', value)}
         help="Pokud dlužíte na výživném a kvůli tomu proti vám běží exekuce, tato osoba se do nezabavitelné částky nezapočítá."
@@ -410,8 +439,9 @@ const MobileKalkulackaWizard = ({
   const renderDebts = () => (
     <Section title="Dluhy a majetek" note="Z těchto údajů se odhaduje průběh oddlužení.">
       <div>
-        <label className={labelClass}>Délka oddlužení</label>
+        <label htmlFor="mobile-delka-oddluzeni" className={labelClass}>Délka oddlužení</label>
         <select
+          id="mobile-delka-oddluzeni"
           value={data.delkaOddluzeni}
           onChange={(event) => setNumber('delkaOddluzeni', event.target.value)}
           className={inputClass}
@@ -422,8 +452,9 @@ const MobileKalkulackaWizard = ({
       </div>
 
       <div>
-        <label className={labelClass}>Nezajištěné dluhy</label>
+        <label htmlFor="mobile-dluhy-nezajistene" className={labelClass}>Nezajištěné dluhy</label>
         <input
+          id="mobile-dluhy-nezajistene"
           type="number"
           min="0"
           value={dluhyNezajisteneDraft}
@@ -722,30 +753,35 @@ const MobileKalkulackaWizard = ({
         <Section title="Rodinná situace">
           <NumberField
             label="Společné děti"
+            step="1"
             value={data.spolecneDeti}
             onChange={(value) => setNumber('spolecneDeti', value)}
             help="Zadejte počet společných dětí, o které se spolu staráte."
           />
           <NumberField
             label="Další vyživované osoby manžela A"
+            step="1"
             value={data.vyzivovaneOsoby1}
             onChange={(value) => setNumber('vyzivovaneOsoby1', value)}
             help="Například děti z předchozího vztahu. Společné děti sem už nepočítejte."
           />
           <NumberField
             label="Další vyživované osoby manžela B"
+            step="1"
             value={data.vyzivovaneOsoby2}
             onChange={(value) => setNumber('vyzivovaneOsoby2', value)}
             help="Například děti z předchozího vztahu. Společné děti sem už nepočítejte."
           />
           <NumberField
             label="Osoby s vymáhaným výživným – manžel A"
+            step="1"
             value={data.osobySVykonemProVyzivne1}
             onChange={(value) => setNumber('osobySVykonemProVyzivne1', value)}
             help="Pokud manžel A dluží na výživném a kvůli tomu proti němu běží exekuce, tato osoba se mu do nezabavitelné částky nezapočítá."
           />
           <NumberField
             label="Osoby s vymáhaným výživným – manžel B"
+            step="1"
             value={data.osobySVykonemProVyzivne2}
             onChange={(value) => setNumber('osobySVykonemProVyzivne2', value)}
             help="Pokud manžel B dluží na výživném a kvůli tomu proti němu běží exekuce, tato osoba se mu do nezabavitelné částky nezapočítá."
@@ -771,8 +807,8 @@ const MobileKalkulackaWizard = ({
       return (
         <Section title="Nastavení exekuce">
           <div>
-            <label className={labelClass}>Počet souběžných exekucí</label>
-            <select value={data.pocetExekuci} onChange={(event) => setData((prev) => ({ ...prev, pocetExekuci: event.target.value }))} className={inputClass}>
+            <label htmlFor="mobile-pocet-exekuci" className={labelClass}>Počet souběžných exekucí</label>
+            <select id="mobile-pocet-exekuci" value={data.pocetExekuci} onChange={(event) => setData((prev) => ({ ...prev, pocetExekuci: event.target.value }))} className={inputClass}>
               <option value="1-3">1 až 3 exekuce</option>
               <option value="4+">4 a více exekucí</option>
             </select>
@@ -780,8 +816,8 @@ const MobileKalkulackaWizard = ({
           </div>
 
           <div>
-            <label className={labelClass}>Druh dluhu</label>
-            <select value={data.typPohledavky} onChange={(event) => setData((prev) => ({ ...prev, typPohledavky: event.target.value }))} className={inputClass}>
+            <label htmlFor="mobile-druh-dluhu" className={labelClass}>Druh dluhu</label>
+            <select id="mobile-druh-dluhu" value={data.typPohledavky} onChange={(event) => setData((prev) => ({ ...prev, typPohledavky: event.target.value }))} className={inputClass}>
               <option value="neprednostni">Nepřednostní dluh</option>
               <option value="prednostni">Přednostní dluh</option>
               <option value="vyzivne">Výživné</option>
@@ -810,11 +846,11 @@ const MobileKalkulackaWizard = ({
   })()
 
   if (step === 'mode') {
-    return <div className="md:hidden print:hidden min-h-[calc(100vh-2rem)] pb-6">{content}</div>
+    return <div className="mobile-calculator print:hidden min-h-[calc(100vh-2rem)] pb-6">{content}</div>
   }
 
   return (
-    <div className="md:hidden print:hidden min-h-screen pb-24">
+    <div className="mobile-calculator print:hidden min-h-screen pb-24">
       <div className="mb-4">
         <div className="flex items-center justify-between gap-3">
           <button type="button" onClick={goBack} className="flex items-center gap-1 text-sm font-black text-blue-700">
@@ -842,7 +878,7 @@ const MobileKalkulackaWizard = ({
 
       {content}
 
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 p-3 backdrop-blur md:hidden">
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 p-3 backdrop-blur">
         <div className="mx-auto flex max-w-xl gap-3">
           <button
             type="button"
