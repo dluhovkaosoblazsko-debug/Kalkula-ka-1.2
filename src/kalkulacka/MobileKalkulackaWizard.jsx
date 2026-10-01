@@ -17,6 +17,12 @@ const INCOME_TYPES = [
 const inputClass = 'w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-base font-semibold text-slate-900 outline-none focus:border-blue-500'
 const labelClass = 'mb-1.5 block text-sm font-bold text-slate-800'
 
+const selectZeroOnFocus = (event) => {
+  if (event.currentTarget.value === '0') {
+    event.currentTarget.select();
+  }
+}
+
 const Section = ({ title, children, note }) => (
   <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
     <h2 className="text-lg font-black text-slate-900">{title}</h2>
@@ -32,6 +38,8 @@ const NumberField = ({ label, value, onChange, help, min = 0 }) => (
       type="number"
       min={min}
       value={value ?? ''}
+      onFocus={selectZeroOnFocus}
+      onClick={selectZeroOnFocus}
       onChange={(event) => onChange(event.target.value)}
       className={inputClass}
     />
@@ -362,6 +370,8 @@ const MobileKalkulackaWizard = ({
           type="number"
           min="0"
           value={dluhyNezajisteneDraft}
+          onFocus={selectZeroOnFocus}
+          onClick={selectZeroOnFocus}
           onChange={(event) => setDluhyNezajisteneDraft(event.target.value)}
           onBlur={commitDluhyNezajistene}
           className={inputClass}

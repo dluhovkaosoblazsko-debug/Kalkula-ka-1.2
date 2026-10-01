@@ -64,6 +64,12 @@ const colorMap = {
 
 const formatKc = (value) => `${Math.round(Math.max(0, Number(value) || 0)).toLocaleString('cs-CZ')} Kč`;
 
+const selectZeroOnFocus = (event) => {
+  if (event.currentTarget.value === '0') {
+    event.currentTarget.select();
+  }
+};
+
 
 const INCOME_TYPES = [
   { value: 'mzda', label: 'Mzda / plat' },
@@ -121,7 +127,7 @@ const IncomeSourcesEditor = ({ sources, multiplePayers, onSourcesChange, onMulti
               <Tooltip text={"Právně přesně: Zadejte čistou měsíční částku před provedením exekuční nebo insolvenční srážky. U mzdy jde o částku po odečtení daně a povinného pojistného; u důchodu nebo jiné dávky o měsíční částku před srážkou.\n\nLidsky řečeno: Zadejte částku, kterou byste dostali, kdyby vám z ní nebyly strhávány peníze kvůli dluhům."}>
                 <label className="block text-[9px] font-bold text-slate-500 mb-1 w-fit cursor-help border-b border-dotted border-slate-400">Čistá měsíční částka</label>
               </Tooltip>
-              <input type="number" min="0" value={source.castka ?? ''} onChange={(e) => updateSource(source.id, { castka: Math.max(0, Number(e.target.value) || 0) })} className="w-full p-2 bg-white border border-slate-300 rounded-lg font-bold text-sm" />
+              <input type="number" onFocus={selectZeroOnFocus} onClick={selectZeroOnFocus} min="0" value={source.castka ?? ''} onChange={(e) => updateSource(source.id, { castka: Math.max(0, Number(e.target.value) || 0) })} className="w-full p-2 bg-white border border-slate-300 rounded-lg font-bold text-sm" />
             </div>
             <button type="button" onClick={() => removeSource(source.id)} disabled={safeSources.length <= 1} className="px-2 py-2 text-[10px] font-bold text-slate-500 disabled:opacity-30 hover:text-red-600">Odebrat</button>
           </div>
@@ -130,7 +136,7 @@ const IncomeSourcesEditor = ({ sources, multiplePayers, onSourcesChange, onMulti
               <Tooltip text={"Právně přesně: Pokud srážky provádí několik plátců současně, určí se, jakou část nezabavitelné částky má každý z nich ponechat. Pro přesný výpočet zadejte částku přidělenou právě tomuto plátci; součet má odpovídat celkové nezabavitelné částce.\n\nLidsky řečeno: Pokud příjem dostáváte od více plátců, například od zaměstnavatele a ČSSZ, nezabavitelná částka se mezi ně rozdělí. Zadejte částku, kterou vám má ponechat tento plátce."}>
                 <label className="block text-[9px] font-bold text-amber-700 mb-1 border-b border-dotted border-amber-500">Nezabavitelná částka přidělená tomuto plátci</label>
               </Tooltip>
-              <input type="number" min="0" value={source.pridelenaNezabavitelna ?? ''} onChange={(e) => updateSource(source.id, { pridelenaNezabavitelna: e.target.value === '' ? '' : Math.max(0, Number(e.target.value) || 0) })} className="w-full p-2 bg-amber-50 border border-amber-200 rounded-lg font-bold text-sm text-amber-900" placeholder="Podle rozhodnutí / pokynu plátci" />
+              <input type="number" onFocus={selectZeroOnFocus} onClick={selectZeroOnFocus} min="0" value={source.pridelenaNezabavitelna ?? ''} onChange={(e) => updateSource(source.id, { pridelenaNezabavitelna: e.target.value === '' ? '' : Math.max(0, Number(e.target.value) || 0) })} className="w-full p-2 bg-amber-50 border border-amber-200 rounded-lg font-bold text-sm text-amber-900" placeholder="Podle rozhodnutí / pokynu plátci" />
             </div>
           )}
         </div>
@@ -191,7 +197,7 @@ const MinimumCoveragePanel = ({ coverage, data, onToggle, onAmountChange, modeLa
           </label>
           {promiseEnabled && (
             <div className="pl-6">
-              <input type="number" min="0" step="1" name={promiseKey} value={data[promiseKey] ?? ''} onChange={onAmountChange} className="w-full rounded-lg border border-slate-600 bg-slate-950 px-3 py-2 text-sm text-white outline-none focus:border-cyan-400 print:bg-white print:text-slate-900" placeholder="Např. 500" />
+              <input type="number" onFocus={selectZeroOnFocus} onClick={selectZeroOnFocus} min="0" step="1" name={promiseKey} value={data[promiseKey] ?? ''} onChange={onAmountChange} className="w-full rounded-lg border border-slate-600 bg-slate-950 px-3 py-2 text-sm text-white outline-none focus:border-cyan-400 print:bg-white print:text-slate-900" placeholder="Např. 500" />
               <div className="mt-2 space-y-1.5 text-xs text-slate-400 print:text-slate-600">
                 <p><strong className="text-slate-300 print:text-slate-700">Právně přesně:</strong> Dlužník může k návrhu připojit závazný příslib, že chybějící plnění bude hradit ze základní částky, která mu nesmí být sražena, nebo z jiných příjmů, které nelze postihnout výkonem rozhodnutí či exekucí. Takové plnění nesmí ohrozit základní hmotné potřeby dlužníka ani osob odkázaných výživou. Kalkulačka posuzuje pouze matematické pokrytí, nikoli udržitelnost příslibu.</p>
                 <p><strong className="text-cyan-300 print:text-cyan-800">Lidsky řečeno:</strong> Z vašeho příjmu se podle zákona nesrazí dost peněz. Můžete proto dobrovolně slíbit, že budete každý měsíc přidávat něco navíc ze své nezabavitelné částky. Vám pak zůstane méně, ale chybějící částku pro oddlužení tím můžete dorovnat.</p>
@@ -217,7 +223,7 @@ const MinimumCoveragePanel = ({ coverage, data, onToggle, onAmountChange, modeLa
               </label>
               {thirdPartyEnabled && (
                 <div className="pl-6">
-                  <input type="number" min="0" step="1" name={thirdPartyKey} value={data[thirdPartyKey] ?? ''} onChange={onAmountChange} className="w-full rounded-lg border border-slate-600 bg-slate-950 px-3 py-2 text-sm text-white outline-none focus:border-cyan-400 print:bg-white print:text-slate-900" placeholder="Např. 1000" />
+                  <input type="number" onFocus={selectZeroOnFocus} onClick={selectZeroOnFocus} min="0" step="1" name={thirdPartyKey} value={data[thirdPartyKey] ?? ''} onChange={onAmountChange} className="w-full rounded-lg border border-slate-600 bg-slate-950 px-3 py-2 text-sm text-white outline-none focus:border-cyan-400 print:bg-white print:text-slate-900" placeholder="Např. 1000" />
                   <p className="mt-1 text-xs text-slate-400 print:text-slate-600">Kalkulačka ověřuje pouze, zda zadaná částka matematicky stačí. Neposuzuje platnost smlouvy ani to, zda bude třetí osoba schopná závazek skutečně plnit.</p>
                 </div>
               )}
@@ -743,7 +749,7 @@ const HlavniKalkulackaPage = () => {
                         {activeTab === 'manzele' ? 'Společné děti' : 'Společné děti / děti ve společné péči'}
                       </label>
                     </Tooltip>
-                    <input type="number" name="spolecneDeti" value={data.spolecneDeti} onChange={handleInputChange} className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg font-bold" />
+                    <input type="number" onFocus={selectZeroOnFocus} onClick={selectZeroOnFocus} name="spolecneDeti" value={data.spolecneDeti} onChange={handleInputChange} className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg font-bold" />
                     {activeTab !== 'manzele' && (
                       <p className="mt-1 text-[9px] leading-snug text-slate-500">
                         Tato hodnota se u jednotlivce také započítává do nezabavitelné částky.
@@ -782,13 +788,13 @@ const HlavniKalkulackaPage = () => {
                         {activeTab === 'manzele' ? 'Další vyživované osoby tohoto dlužníka' : 'Vyživované osoby'}
                       </label>
                     </Tooltip>
-                    <input type="number" name="vyzivovaneOsoby1" value={data.vyzivovaneOsoby1} onChange={handleInputChange} className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg font-bold text-sm" />
+                    <input type="number" onFocus={selectZeroOnFocus} onClick={selectZeroOnFocus} name="vyzivovaneOsoby1" value={data.vyzivovaneOsoby1} onChange={handleInputChange} className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg font-bold text-sm" />
                   </div>
                   <div>
                     <Tooltip text={"Právně přesně: Jedna čtvrtina nezabavitelné částky se nezapočítá na osobu, v jejíž prospěch byl nařízen výkon rozhodnutí nebo exekuce pro výživné, pokud toto vymáhání stále trvá.\n\nLidsky řečeno: Pokud dlužíte na výživném a kvůli tomu proti vám běží exekuce, osoba, na kterou výživné dlužíte, se vám do nezabavitelné částky nezapočítá."}>
                        <label className="block text-[10px] font-bold text-amber-700 mb-1 w-fit cursor-help border-b border-dotted border-amber-600">Z toho osoby s vymáhaným výživným</label>
                     </Tooltip>
-                    <input type="number" name="osobySVykonemProVyzivne1" value={data.osobySVykonemProVyzivne1} onChange={handleInputChange} max={(activeTab === 'manzele' ? data.spolecneDeti : 0) + data.vyzivovaneOsoby1 + (results.insM_A?.partnerZapocitan || results.insJ?.partnerZapocitan ? 1 : 0)} className="w-full p-2 bg-amber-50 border border-amber-200 rounded-lg font-bold text-amber-900 text-sm" />
+                    <input type="number" onFocus={selectZeroOnFocus} onClick={selectZeroOnFocus} name="osobySVykonemProVyzivne1" value={data.osobySVykonemProVyzivne1} onChange={handleInputChange} max={(activeTab === 'manzele' ? data.spolecneDeti : 0) + data.vyzivovaneOsoby1 + (results.insM_A?.partnerZapocitan || results.insJ?.partnerZapocitan ? 1 : 0)} className="w-full p-2 bg-amber-50 border border-amber-200 rounded-lg font-bold text-amber-900 text-sm" />
                   </div>
                 </div>
 
@@ -827,14 +833,14 @@ const HlavniKalkulackaPage = () => {
                     <Tooltip text={"Právně přesně: Uveďte běžné zákonné výživné, které máte během oddlužení pravidelně hradit. Tato pohledávka se hradí před nezajištěnými věřiteli a ovlivňuje i minimální částku potřebnou pro oddlužení.\n\nLidsky řečeno: Uveďte měsíční výživné, které platíte na děti, které nemáte ve své péči."}>
                       <label className="block text-[10px] font-bold text-red-600 mb-1 w-fit cursor-help border-b border-dotted border-red-400">Běžné zákonné výživné hrazené během oddlužení</label>
                     </Tooltip>
-                    <input type="number" name="bezneMesicniVyzivne1" value={data.bezneMesicniVyzivne1} onChange={handleInputChange} className="w-full p-2 bg-red-50 border border-red-200 rounded-lg outline-none font-bold text-red-800 text-sm" />
+                    <input type="number" onFocus={selectZeroOnFocus} onClick={selectZeroOnFocus} name="bezneMesicniVyzivne1" value={data.bezneMesicniVyzivne1} onChange={handleInputChange} className="w-full p-2 bg-red-50 border border-red-200 rounded-lg outline-none font-bold text-red-800 text-sm" />
                   </div>
                 )}
                 <div className="pt-2 border-t border-slate-100">
                   <Tooltip text={"Právně přesně: Uveďte pouze příjmy, z nichž se podle pravidel srážek ze mzdy a jiných příjmů srážka neprovádí. Důchod, nemocenské, peněžitá pomoc v mateřství, podpora v nezaměstnanosti, DPP/DPČ ani nejednorázové dávky státní sociální podpory sem obecně nepatří.\n\nLidsky řečeno: Sem patří například příspěvek na péči, dávky pro osoby se zdravotním postižením, náhradní výživné, daňový bonus nebo výživné na dítě. Důchod, nemocenská, mateřská ani podpora v nezaměstnanosti sem nepatří."}>
                     <label className="block text-[10px] font-bold text-green-700 mb-1 w-fit cursor-help border-b border-dotted border-green-500">Jiné příjmy chráněné před srážkami</label>
                   </Tooltip>
-                  <input type="number" name="chranenePrijmy1" value={data.chranenePrijmy1} onChange={handleInputChange} className="w-full p-2 bg-green-50 border border-green-200 rounded-lg outline-none font-bold text-green-900 text-sm" />
+                  <input type="number" onFocus={selectZeroOnFocus} onClick={selectZeroOnFocus} name="chranenePrijmy1" value={data.chranenePrijmy1} onChange={handleInputChange} className="w-full p-2 bg-green-50 border border-green-200 rounded-lg outline-none font-bold text-green-900 text-sm" />
                 </div>
               </div>
 
@@ -863,13 +869,13 @@ const HlavniKalkulackaPage = () => {
                       <Tooltip text={"Právně přesně: Uveďte další osoby, kterým je druhý dlužník povinen poskytovat výživné a které nejsou zahrnuty mezi společně vyživované děti. Za každou započitatelnou osobu se zvyšuje jeho nezabavitelná částka o jednu čtvrtinu základní nezabavitelné částky.\n\nLidsky řečeno: Uveďte další osoby, které tento manžel vyživuje, například děti z předchozího vztahu. Společné děti sem už nepočítejte."}>
                         <label className="block text-[10px] font-bold text-slate-600 mb-1 w-fit cursor-help border-b border-dotted border-slate-400">Další vyživované osoby tohoto dlužníka</label>
                       </Tooltip>
-                      <input type="number" name="vyzivovaneOsoby2" value={data.vyzivovaneOsoby2} onChange={handleInputChange} className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg font-bold text-sm" />
+                      <input type="number" onFocus={selectZeroOnFocus} onClick={selectZeroOnFocus} name="vyzivovaneOsoby2" value={data.vyzivovaneOsoby2} onChange={handleInputChange} className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg font-bold text-sm" />
                     </div>
                     <div>
                       <Tooltip text={"Právně přesně: Uveďte počet vyživovaných osob druhého dlužníka, v jejichž prospěch právě trvá výkon rozhodnutí nebo exekuce pro výživné. Na takovou osobu se jedna čtvrtina nezabavitelné částky nezapočítává.\n\nLidsky řečeno: Pokud tento manžel dluží na výživném a kvůli tomu proti němu běží exekuce, osoba, na kterou výživné dluží, se mu do nezabavitelné částky nezapočítá."}>
                         <label className="block text-[10px] font-bold text-amber-700 mb-1 w-fit cursor-help border-b border-dotted border-amber-600">Z toho osoby s vymáhaným výživným</label>
                       </Tooltip>
-                      <input type="number" name="osobySVykonemProVyzivne2" value={data.osobySVykonemProVyzivne2} onChange={handleInputChange} max={data.spolecneDeti + data.vyzivovaneOsoby2 + (results.insM_B?.partnerZapocitan ? 1 : 0)} className="w-full p-2 bg-amber-50 border border-amber-200 rounded-lg font-bold text-amber-900 text-sm" />
+                      <input type="number" onFocus={selectZeroOnFocus} onClick={selectZeroOnFocus} name="osobySVykonemProVyzivne2" value={data.osobySVykonemProVyzivne2} onChange={handleInputChange} max={data.spolecneDeti + data.vyzivovaneOsoby2 + (results.insM_B?.partnerZapocitan ? 1 : 0)} className="w-full p-2 bg-amber-50 border border-amber-200 rounded-lg font-bold text-amber-900 text-sm" />
                     </div>
                   </div>
 
@@ -884,13 +890,13 @@ const HlavniKalkulackaPage = () => {
                     <Tooltip text={"Právně přesně: Uveďte běžné zákonné výživné druhého manžela hrazené během oddlužení. Hradí se před nezajištěnými věřiteli a zvyšuje potřebné minimální měsíční plnění.\n\nLidsky řečeno: Pokud druhý manžel pravidelně platí alimenty, napište je sem. Tyto peníze se v oddlužení hradí před běžnými nezajištěnými dluhy."}>
                       <label className="block text-[10px] font-bold text-red-600 mb-1 w-fit cursor-help border-b border-dotted border-red-400">Běžné zákonné výživné hrazené během oddlužení (M2)</label>
                     </Tooltip>
-                    <input type="number" name="bezneMesicniVyzivne2" value={data.bezneMesicniVyzivne2} onChange={handleInputChange} className="w-full p-2 bg-red-50 border border-red-200 rounded-lg outline-none font-bold text-red-800 text-sm" />
+                    <input type="number" onFocus={selectZeroOnFocus} onClick={selectZeroOnFocus} name="bezneMesicniVyzivne2" value={data.bezneMesicniVyzivne2} onChange={handleInputChange} className="w-full p-2 bg-red-50 border border-red-200 rounded-lg outline-none font-bold text-red-800 text-sm" />
                   </div>
                   <div className="pt-2 border-t border-slate-100">
                     <Tooltip text={"Právně přesně: Uveďte pouze příjmy druhého manžela, z nichž se podle pravidel srážek ze mzdy a jiných příjmů srážka neprovádí. Kalkulačka právní povahu konkrétního příjmu sama neověřuje.\n\nLidsky řečeno: Sem patří například příspěvek na péči, dávky pro osoby se zdravotním postižením, náhradní výživné, daňový bonus nebo výživné na dítě. Důchod, nemocenská, mateřská ani podpora v nezaměstnanosti sem nepatří."}>
                       <label className="block text-[10px] font-bold text-green-700 mb-1 w-fit cursor-help border-b border-dotted border-green-500">Jiné příjmy chráněné před srážkami</label>
                     </Tooltip>
-                    <input type="number" min="0" name="chranenePrijmy2" value={data.chranenePrijmy2} onChange={handleInputChange} className="w-full p-2 bg-green-50 border border-green-200 rounded-lg outline-none font-bold text-green-900 text-sm" />
+                    <input type="number" onFocus={selectZeroOnFocus} onClick={selectZeroOnFocus} min="0" name="chranenePrijmy2" value={data.chranenePrijmy2} onChange={handleInputChange} className="w-full p-2 bg-green-50 border border-green-200 rounded-lg outline-none font-bold text-green-900 text-sm" />
                   </div>
                 </div>
               )}
@@ -943,7 +949,7 @@ const HlavniKalkulackaPage = () => {
                        <Tooltip text={"Právně přesně: Zadejte odhad částky, která po případném zpeněžení majetku a souvisejících nákladech skutečně připadne nezajištěným věřitelům. Ne každý majetek musí být v oddlužení zpeněžen.\n\nLidsky řečeno: Pokud se v oddlužení bude prodávat váš majetek, odhadněte částku, která z jeho prodeje půjde na dluhy. Například peníze z prodeje auta."}>
                          <label className="block text-[10px] font-bold text-green-700 mb-1 w-fit cursor-help border-b border-dotted border-green-500">Výtěžek ze zpeněžení majetku</label>
                        </Tooltip>
-                       <input type="number" name="vytezekZpenezeni" value={data.vytezekZpenezeni} onChange={handleInputChange} className="w-full p-2 bg-green-50 border border-green-200 rounded-lg font-bold text-green-900 text-sm" />
+                       <input type="number" onFocus={selectZeroOnFocus} onClick={selectZeroOnFocus} name="vytezekZpenezeni" value={data.vytezekZpenezeni} onChange={handleInputChange} className="w-full p-2 bg-green-50 border border-green-200 rounded-lg font-bold text-green-900 text-sm" />
                      </div>
                   </div>
                   
@@ -956,7 +962,11 @@ const HlavniKalkulackaPage = () => {
                       name="dluhyNezajistene"
                       min="0"
                       value={dluhyNezajisteneDraft}
-                      onFocus={() => setEditingDluhyNezajistene(true)}
+                      onFocus={(e) => {
+                        selectZeroOnFocus(e);
+                        setEditingDluhyNezajistene(true);
+                      }}
+                      onClick={selectZeroOnFocus}
                       onChange={(e) => setDluhyNezajisteneDraft(e.target.value)}
                       onBlur={commitDluhyNezajistene}
                       onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }}
@@ -969,13 +979,13 @@ const HlavniKalkulackaPage = () => {
                       <Tooltip text={"Právně přesně: Zajištěný věřitel se v rozsahu zajištění uspokojuje ze zpeněžení majetku, kterým je jeho pohledávka zajištěna. Pokud hodnota zajištění nestačí, rozdíl se může za zákonných podmínek považovat za nezajištěnou pohledávku. Toto pole je zde informativní a nevstupuje přímo do modelového procenta nezajištěných věřitelů.\n\nLidsky řečeno: Uveďte dluhy, za které ručíte konkrétním majetkem, například hypotéku zajištěnou domem. Pokud se tento majetek v oddlužení prodá, peníze z prodeje jdou přednostně na tento dluh. Pokud nestačí na celý dluh, zbytek může pokračovat jako nezajištěný dluh."}>
                         <label className="block text-[10px] font-bold text-slate-600 mb-1 w-fit cursor-help border-b border-dotted border-slate-400">Zajištěné pohledávky</label>
                       </Tooltip>
-                      <input type="number" name="dluhyZajistene" value={data.dluhyZajistene} onChange={handleInputChange} className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm" />
+                      <input type="number" onFocus={selectZeroOnFocus} onClick={selectZeroOnFocus} name="dluhyZajistene" value={data.dluhyZajistene} onChange={handleInputChange} className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm" />
                     </div>
                     <div>
                       <Tooltip text={"Právně přesně: Osvobození se nedotýká například zákonného výživného, náhrady škody způsobené na zdraví, škody způsobené úmyslným porušením právní povinnosti, některých peněžitých trestů nebo majetkových sankcí za úmyslný trestný čin a pohledávky insolvenčního správce na odměnu a hotové výdaje. Toto pole je informativní a nevstupuje do modelového procenta nezajištěných věřitelů.\n\nLidsky řečeno: Tyto dluhy se vám ani po úspěšném oddlužení neodpustí. Patří sem například dlužné výživné, náhrada škody na zdraví, škoda způsobená úmyslně nebo peněžitý trest za úmyslný trestný čin."}>
                         <label className="block text-[10px] font-bold text-slate-600 mb-1 w-fit cursor-help border-b border-dotted border-slate-400">Dluhy, které se oddlužením neodpouštějí</label>
                       </Tooltip>
-                      <input type="number" name="dluhyNeosvoboditelne" value={data.dluhyNeosvoboditelne} onChange={handleInputChange} className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm" />
+                      <input type="number" onFocus={selectZeroOnFocus} onClick={selectZeroOnFocus} name="dluhyNeosvoboditelne" value={data.dluhyNeosvoboditelne} onChange={handleInputChange} className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm" />
                     </div>
                   </div>
                 </div>
@@ -992,15 +1002,15 @@ const HlavniKalkulackaPage = () => {
                 <div className="grid md:grid-cols-2 gap-8">
                   <div className="space-y-4">
                     <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-widest border-b pb-2">Základní hodnoty pro výpočet nezabavitelné částky</h4>
-                    <div><label className="block text-xs font-bold text-slate-600 mb-1">Životní minimum</label><input type="number" value={params.zivotniMinimum} onChange={(e) => setParams({...params, zivotniMinimum: parseFloat(e.target.value) || 0})} className="w-full p-2 border rounded font-bold" /></div>
-                    <div><label className="block text-xs font-bold text-slate-600 mb-1">Normativní nájemné – 1 osoba, obec 70 000+ obyvatel</label><input type="number" value={params.normativniNajemne} onChange={(e) => setParams({...params, normativniNajemne: parseFloat(e.target.value) || 0})} className="w-full p-2 border rounded font-bold" /></div>
-                    <div><label className="block text-xs font-bold text-slate-600 mb-1">Energetický paušál</label><input type="number" value={params.energetickyPausal} onChange={(e) => setParams({...params, energetickyPausal: parseFloat(e.target.value) || 0})} className="w-full p-2 border rounded font-bold" /></div>
+                    <div><label className="block text-xs font-bold text-slate-600 mb-1">Životní minimum</label><input type="number" onFocus={selectZeroOnFocus} onClick={selectZeroOnFocus} value={params.zivotniMinimum} onChange={(e) => setParams({...params, zivotniMinimum: parseFloat(e.target.value) || 0})} className="w-full p-2 border rounded font-bold" /></div>
+                    <div><label className="block text-xs font-bold text-slate-600 mb-1">Normativní nájemné – 1 osoba, obec 70 000+ obyvatel</label><input type="number" onFocus={selectZeroOnFocus} onClick={selectZeroOnFocus} value={params.normativniNajemne} onChange={(e) => setParams({...params, normativniNajemne: parseFloat(e.target.value) || 0})} className="w-full p-2 border rounded font-bold" /></div>
+                    <div><label className="block text-xs font-bold text-slate-600 mb-1">Energetický paušál</label><input type="number" onFocus={selectZeroOnFocus} onClick={selectZeroOnFocus} value={params.energetickyPausal} onChange={(e) => setParams({...params, energetickyPausal: parseFloat(e.target.value) || 0})} className="w-full p-2 border rounded font-bold" /></div>
                   </div>
                   <div className="space-y-4">
                     <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-widest border-b pb-2">Odměny a náhrady</h4>
-                    <div><label className="block text-xs font-bold text-slate-600 mb-1">Měsíční odměna a hotové výdaje správce – jednotlivec</label><input type="number" value={params.odmenaSpravceJednotlivec} onChange={(e) => setParams({...params, odmenaSpravceJednotlivec: parseFloat(e.target.value) || 0})} className="w-full p-2 border rounded font-bold" /></div>
-                    <div><label className="block text-xs font-bold text-slate-600 mb-1">Měsíční odměna a hotové výdaje správce – manželé</label><input type="number" value={params.odmenaSpravceManzele} onChange={(e) => setParams({...params, odmenaSpravceManzele: parseFloat(e.target.value) || 0})} className="w-full p-2 border rounded font-bold" /></div>
-                    <div><label className="block text-xs font-bold text-slate-600 mb-1">Maximální paušální náhrada nákladů plátce</label><input type="number" value={params.pausalniNahradaPlatce} onChange={(e) => setParams({...params, pausalniNahradaPlatce: parseFloat(e.target.value) || 0})} className="w-full p-2 border rounded font-bold" /></div>
+                    <div><label className="block text-xs font-bold text-slate-600 mb-1">Měsíční odměna a hotové výdaje správce – jednotlivec</label><input type="number" onFocus={selectZeroOnFocus} onClick={selectZeroOnFocus} value={params.odmenaSpravceJednotlivec} onChange={(e) => setParams({...params, odmenaSpravceJednotlivec: parseFloat(e.target.value) || 0})} className="w-full p-2 border rounded font-bold" /></div>
+                    <div><label className="block text-xs font-bold text-slate-600 mb-1">Měsíční odměna a hotové výdaje správce – manželé</label><input type="number" onFocus={selectZeroOnFocus} onClick={selectZeroOnFocus} value={params.odmenaSpravceManzele} onChange={(e) => setParams({...params, odmenaSpravceManzele: parseFloat(e.target.value) || 0})} className="w-full p-2 border rounded font-bold" /></div>
+                    <div><label className="block text-xs font-bold text-slate-600 mb-1">Maximální paušální náhrada nákladů plátce</label><input type="number" onFocus={selectZeroOnFocus} onClick={selectZeroOnFocus} value={params.pausalniNahradaPlatce} onChange={(e) => setParams({...params, pausalniNahradaPlatce: parseFloat(e.target.value) || 0})} className="w-full p-2 border rounded font-bold" /></div>
                     
                     <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-widest border-b pb-2 pt-4">Zákonné koeficienty a podmínky</h4>
                     <div className="grid grid-cols-2 gap-4">
@@ -1008,13 +1018,13 @@ const HlavniKalkulackaPage = () => {
                         <Tooltip text={"Právně přesně: Tento koeficient určuje, jaká část zákonného základu se použije pro výpočet základní nezabavitelné částky na dlužníka. Pro výpočty roku 2026 kalkulačka používá 85 %. Z této základní částky se následně odvozují i čtvrtiny za započitatelné vyživované osoby.\n\nLidsky řečeno: Hodnota určená zákonem pro výpočet nezabavitelné částky. Pro rok 2026 je 85 %. Běžně ji neměňte."}>
                           <label className="block text-xs font-bold text-slate-600 mb-1 w-full text-left cursor-help border-b border-dotted border-slate-400">Podíl pro základní nezabavitelnou částku (%)</label>
                         </Tooltip>
-                        <input type="number" value={params.koeficientZahladu} onChange={(e) => setParams({...params, koeficientZahladu: parseFloat(e.target.value) || 0})} className="w-full p-2 border border-blue-200 bg-blue-50 rounded font-bold text-sm" />
+                        <input type="number" onFocus={selectZeroOnFocus} onClick={selectZeroOnFocus} value={params.koeficientZahladu} onChange={(e) => setParams({...params, koeficientZahladu: parseFloat(e.target.value) || 0})} className="w-full p-2 border border-blue-200 bg-blue-50 rounded font-bold text-sm" />
                       </div>
                       <div>
                         <Tooltip text={"Právně přesně: Tento koeficient se používá pro výpočet hranice, nad kterou je část zbytku příjmu po odečtení nezabavitelné částky postižitelná bez omezení. Pro rok 2026 kalkulačka používá násobek 1,9. Část nad takto vypočtenou hranicí se už nerozděluje na třetiny a připočítává se ke srážce celá.\n\nLidsky řečeno: Tato hodnota určuje hranici, nad kterou se část příjmu srazí celá. Pro rok 2026 je 1,9. Běžně ji neměňte."}>
                           <label className="block text-xs font-bold text-slate-600 mb-1 w-full text-left cursor-help border-b border-dotted border-slate-400">Násobek pro hranici srážky bez omezení</label>
                         </Tooltip>
-                        <input type="number" step="0.1" value={params.koeficientZabavitelnosti} onChange={(e) => setParams({...params, koeficientZabavitelnosti: parseFloat(e.target.value) || 0})} className="w-full p-2 border border-blue-200 bg-blue-50 rounded font-bold text-sm" />
+                        <input type="number" onFocus={selectZeroOnFocus} onClick={selectZeroOnFocus} step="0.1" value={params.koeficientZabavitelnosti} onChange={(e) => setParams({...params, koeficientZabavitelnosti: parseFloat(e.target.value) || 0})} className="w-full p-2 border border-blue-200 bg-blue-50 rounded font-bold text-sm" />
                       </div>
                       <div className="col-span-2 rounded-lg border border-blue-100 bg-blue-50 p-3">
                         <Tooltip text={"Právně přesně: Tento limit není samostatně nastavovaná zákonná konstanta. Při posouzení výjimky z režimu 4+ exekucí u dlužníka s rozhodným důchodem se jedna třetina porovnává s částkou odpovídající měsíční odměně a hotovým výdajům insolvenčního správce pro jednotlivce. Kalkulačka proto limit odvozuje automaticky z aktuálně nastavené částky správce.\n\nLidsky řečeno: Tato hodnota slouží k posouzení výjimky pro některé důchodce se 4 a více exekucemi. Počítá se automaticky a běžně ji neměňte."}>
