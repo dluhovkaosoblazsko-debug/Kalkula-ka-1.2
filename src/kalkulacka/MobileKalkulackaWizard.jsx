@@ -31,17 +31,20 @@ const Section = ({ title, children, note }) => (
   </section>
 )
 
-const NumberField = ({ label, value, onChange, help, min = 0 }) => (
+const NumberField = ({ label, value, onChange, help, min = 0, max, disabled = false, placeholder }) => (
   <div>
     <label className={labelClass}>{label}</label>
     <input
       type="number"
       min={min}
+      max={max}
       value={value ?? ''}
       onFocus={selectZeroOnFocus}
       onClick={selectZeroOnFocus}
       onChange={(event) => onChange(event.target.value)}
-      className={inputClass}
+      disabled={disabled}
+      placeholder={placeholder}
+      className={inputClass + (disabled ? ' cursor-not-allowed opacity-50' : '')}
     />
     {help && <p className="mt-1.5 text-xs leading-relaxed text-slate-500">{help}</p>}
   </div>
@@ -406,8 +409,35 @@ const MobileKalkulackaWizard = ({
     const suffix = mode === 'manzele' ? 'M' : '1'
     const promiseEnabled = Boolean(data['povolitPrislibDluznika' + suffix])
     const thirdEnabled = Boolean(data['povolitPlneniTretiOsoby' + suffix])
+    const basicNeedsKey = 'zakladniPotreby' + suffix
     const promiseKey = 'zavaznyPrislib' + suffix
     const thirdKey = 'pravidelnePlneniTretiOsoby' + suffix
+
+    const setBasicNeeds = (value) => {
+      const nextNeeds = value === '' ? '' : Math.max(0, Number(value) || 0)
+      const nextLimit = nextNeeds === '' || Number(nextNeeds) <= 0
+        ? 0
+        : Math.min(
+            coverage.deficitAfterStatutoryDeduction,
+            Math.max(0, coverage.retainedAfterStatutoryDeduction - Number(nextNeeds)),
+          )
+
+      setData((prev) => ({
+        ...prev,
+        [basicNeedsKey]: nextNeeds,
+        [promiseKey]: nextNeeds === ''
+          ? ''
+          : Math.min(Math.max(0, Number(prev[promiseKey]) || 0), nextLimit),
+      }))
+    }
+
+    const setPromise = (value) => {
+      const requested = Math.max(0, Number(value) || 0)
+      setData((prev) => ({
+        ...prev,
+        [promiseKey]: Math.min(requested, coverage.maxDebtorPromise),
+      }))
+    }
 
     return (
       <Section title="Stačí příjem pro oddlužení?">
@@ -424,19 +454,53 @@ const MobileKalkulackaWizard = ({
           onChange={(checked) => setData((prev) => ({
             ...prev,
             ['povolitPrislibDluznika' + suffix]: checked,
-            ...(checked ? {} : { [promiseKey]: '' }),
+            ...(checked ? {} : { [basicNeedsKey]: '', [promiseKey]: '' }),
           }))}
         >
           Chybějící částku budu doplácet ze svých peněz
         </Choice>
 
         {promiseEnabled && (
-          <NumberField
-            label="Kolik budete měsíčně doplácet?"
-            value={data[promiseKey]}
-            onChange={(value) => setData((prev) => ({ ...prev, [promiseKey]: Math.max(0, Number(value) || 0) }))}
-            help="Vám pak zůstane méně, ale chybějící částku pro oddlužení tím můžete dorovnat."
-          />
+          <>
+            <NumberField
+              label="Kolik nejméně měsíčně potřebujete na základní potřeby domácnosti?"
+              value={data[basicNeedsKey]}
+              onChange={setBasicNeeds}
+              placeholder="Např. 14 000"
+              help="Uveďte částku, kterou potřebujete ponechat na základní životní potřeby své domácnosti. Kalkulačka neposuzuje, zda je tato částka věcně přiměřená."
+            />
+
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
+              <div className="flex justify-between gap-3"><span>Po zákonné srážce zůstává</span><strong>{formatKc(coverage.retainedAfterStatutoryDeduction)}</strong></div>
+              {coverage.basicNeedsDeclared ? (
+                <>
+                  <div className="mt-2 flex justify-between gap-3"><span>Základní potřeby</span><strong>− {formatKc(coverage.basicNeeds)}</strong></div>
+                  <div className="mt-2 flex justify-between gap-3 border-t border-slate-200 pt-2 font-black"><span>Maximální příslib</span><strong>{formatKc(coverage.maxDebtorPromise)}</strong></div>
+                </>
+              ) : (
+                <p className="mt-2 font-bold text-amber-700">Nejprve zadejte základní potřeby. Bez nich se příslib do výpočtu nezapočítá.</p>
+              )}
+            </div>
+
+            <NumberField
+              label="Kolik budete měsíčně doplácet?"
+              value={coverage.basicNeedsDeclared ? coverage.effectiveDebtorPromise : ''}
+              onChange={setPromise}
+              max={coverage.maxDebtorPromise}
+              disabled={!coverage.basicNeedsDeclared || coverage.maxDebtorPromise <= 0}
+              placeholder="Nejprve zadejte základní potřeby"
+              help={coverage.basicNeedsDeclared && coverage.maxDebtorPromise > 0
+                ? 'Kalkulačka nepovolí více než ' + formatKc(coverage.maxDebtorPromise) + '. Limit je dán tím, kolik chybí do minima a kolik vám zbývá nad základními potřebami.'
+                : 'Podle zadaných údajů zatím nelze závazný příslib započítat.'}
+            />
+
+            {coverage.basicNeedsDeclared && (
+              <div className="rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">
+                <div className="flex justify-between gap-3"><span>Závazný příslib</span><strong>− {formatKc(coverage.debtorPromise)}</strong></div>
+                <div className="mt-2 flex justify-between gap-3 border-t border-blue-200 pt-2 font-black"><span>Po příslibu zůstává</span><strong>{formatKc(Math.max(0, coverage.retainedAfterStatutoryDeduction - coverage.debtorPromise))}</strong></div>
+              </div>
+            )}
+          </>
         )}
 
         {coverage.deficitAfterDebtorPromise > 0 && (

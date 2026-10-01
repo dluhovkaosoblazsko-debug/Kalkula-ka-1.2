@@ -3,7 +3,7 @@ import {
   Calculator, Users, User, Info, AlertCircle,
   ShieldAlert, Settings, Layers, Printer, Gavel
 } from 'lucide-react';
-import { DEFAULT_2026_PARAMS, calculateCreditorSatisfaction, calculateMinimumPaymentCoverage, calculateWageDeduction, getMinimumInsolvencyPayment } from '../lib/calculations2026';
+import { DEFAULT_2026_PARAMS, calculateCreditorSatisfaction, calculateDebtorPromiseLimit, calculateMinimumPaymentCoverage, calculateWageDeduction, getMinimumInsolvencyPayment } from '../lib/calculations2026';
 import MobileKalkulackaWizard from './MobileKalkulackaWizard';
 
 // --- POMOCNÁ KOMPONENTA PRO TOOLTIPY ---
@@ -151,14 +151,38 @@ const IncomeSourcesEditor = ({ sources, multiplePayers, onSourcesChange, onMulti
   );
 };
 
-const MinimumCoveragePanel = ({ coverage, data, onToggle, onAmountChange, modeLabel, fieldSuffix }) => {
+const MinimumCoveragePanel = ({ coverage, data, onToggle, onAmountChange, onValueChange, modeLabel, fieldSuffix }) => {
   const promiseEnabled = Boolean(data[`povolitPrislibDluznika${fieldSuffix}`]);
   const thirdPartyEnabled = Boolean(data[`povolitPlneniTretiOsoby${fieldSuffix}`]);
+  const basicNeedsKey = `zakladniPotreby${fieldSuffix}`;
   const promiseKey = `zavaznyPrislib${fieldSuffix}`;
   const thirdPartyKey = `pravidelnePlneniTretiOsoby${fieldSuffix}`;
+  const rawPromise = Math.max(0, Number(data[promiseKey]) || 0);
   const stillNeedsThirdParty = coverage.deficitAfterDebtorPromise > 0;
   const hasAdditionalSources = promiseEnabled || thirdPartyEnabled;
   const finalDeficitConfirmed = thirdPartyEnabled && coverage.finalDeficit > 0;
+
+  const handleBasicNeedsChange = (event) => {
+    const rawValue = event.target.value;
+    const nextNeeds = rawValue === '' ? '' : Math.max(0, Number(rawValue) || 0);
+    onValueChange(basicNeedsKey, nextNeeds);
+
+    if (nextNeeds === '' || Number(nextNeeds) <= 0) {
+      onValueChange(promiseKey, '');
+      return;
+    }
+
+    const nextLimit = Math.min(
+      coverage.deficitAfterStatutoryDeduction,
+      Math.max(0, coverage.retainedAfterStatutoryDeduction - Number(nextNeeds)),
+    );
+    if (rawPromise > nextLimit) onValueChange(promiseKey, nextLimit);
+  };
+
+  const handlePromiseChange = (event) => {
+    const requested = Math.max(0, Number(event.target.value) || 0);
+    onValueChange(promiseKey, Math.min(requested, coverage.maxDebtorPromise));
+  };
 
   return (
     <section className="rounded-xl border border-slate-700/70 bg-slate-950/45 p-4 space-y-3 print:bg-white print:border-slate-300">
@@ -196,11 +220,87 @@ const MinimumCoveragePanel = ({ coverage, data, onToggle, onAmountChange, modeLa
             <span><strong>Dlužník může část chybějící částky hradit ze své nezabavitelné částky nebo jiných nepostižitelných příjmů.</strong></span>
           </label>
           {promiseEnabled && (
-            <div className="pl-6">
-              <input type="number" onFocus={selectZeroOnFocus} onClick={selectZeroOnFocus} min="0" step="1" name={promiseKey} value={data[promiseKey] ?? ''} onChange={onAmountChange} className="w-full rounded-lg border border-slate-600 bg-slate-950 px-3 py-2 text-sm text-white outline-none focus:border-cyan-400 print:bg-white print:text-slate-900" placeholder="Např. 500" />
-              <div className="mt-2 space-y-1.5 text-xs text-slate-400 print:text-slate-600">
-                <p><strong className="text-slate-300 print:text-slate-700">Právně přesně:</strong> Dlužník může k návrhu připojit závazný příslib, že chybějící plnění bude hradit ze základní částky, která mu nesmí být sražena, nebo z jiných příjmů, které nelze postihnout výkonem rozhodnutí či exekucí. Takové plnění nesmí ohrozit základní hmotné potřeby dlužníka ani osob odkázaných výživou. Kalkulačka posuzuje pouze matematické pokrytí, nikoli udržitelnost příslibu.</p>
-                <p><strong className="text-cyan-300 print:text-cyan-800">Lidsky řečeno:</strong> Z vašeho příjmu se podle zákona nesrazí dost peněz. Můžete proto dobrovolně slíbit, že budete každý měsíc přidávat něco navíc ze své nezabavitelné částky. Vám pak zůstane méně, ale chybějící částku pro oddlužení tím můžete dorovnat.</p>
+            <div className="pl-6 space-y-3">
+              <div>
+                <label className="mb-1 block text-xs font-bold text-slate-200 print:text-slate-700">
+                  Minimální měsíční potřeby domácnosti
+                </label>
+                <input
+                  type="number"
+                  onFocus={selectZeroOnFocus}
+                  onClick={selectZeroOnFocus}
+                  min="0"
+                  step="1"
+                  name={basicNeedsKey}
+                  value={data[basicNeedsKey] ?? ''}
+                  onChange={handleBasicNeedsChange}
+                  className="w-full rounded-lg border border-slate-600 bg-slate-950 px-3 py-2 text-sm text-white outline-none focus:border-cyan-400 print:bg-white print:text-slate-900"
+                  placeholder="Např. 14 000"
+                />
+                <p className="mt-1 text-xs text-slate-400 print:text-slate-600">
+                  Uveďte částku, kterou nejméně potřebujete každý měsíc ponechat na základní potřeby své domácnosti. Kalkulačka neposuzuje, zda je tato částka věcně přiměřená.
+                </p>
+              </div>
+
+              <div className="rounded-lg border border-slate-700 bg-slate-950/50 p-2.5 text-xs text-slate-300 print:border-slate-300 print:bg-white print:text-slate-700">
+                <div className="flex justify-between gap-4"><span>Po zákonné srážce zůstává</span><strong>{formatKc(coverage.retainedAfterStatutoryDeduction)}</strong></div>
+                {coverage.basicNeedsDeclared ? (
+                  <>
+                    <div className="mt-1 flex justify-between gap-4"><span>Základní potřeby domácnosti</span><strong>− {formatKc(coverage.basicNeeds)}</strong></div>
+                    <div className="mt-1 flex justify-between gap-4 border-t border-slate-700 pt-1 font-bold print:border-slate-300"><span>Pro příslib lze podle zadaných údajů použít nejvýše</span><strong>{formatKc(coverage.maxDebtorPromise)}</strong></div>
+                  </>
+                ) : (
+                  <p className="mt-2 font-semibold text-amber-200 print:text-amber-800">
+                    Nejprve zadejte minimální měsíční potřeby. Bez tohoto údaje se závazný příslib do výpočtu nezapočítá.
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-bold text-slate-200 print:text-slate-700">
+                  Závazný příslib dlužníka
+                </label>
+                <input
+                  type="number"
+                  onFocus={selectZeroOnFocus}
+                  onClick={selectZeroOnFocus}
+                  min="0"
+                  max={coverage.maxDebtorPromise}
+                  step="1"
+                  name={promiseKey}
+                  value={coverage.basicNeedsDeclared ? coverage.effectiveDebtorPromise : ''}
+                  onChange={handlePromiseChange}
+                  disabled={!coverage.basicNeedsDeclared || coverage.maxDebtorPromise <= 0}
+                  className="w-full rounded-lg border border-slate-600 bg-slate-950 px-3 py-2 text-sm text-white outline-none focus:border-cyan-400 disabled:cursor-not-allowed disabled:opacity-50 print:bg-white print:text-slate-900"
+                  placeholder="Nejprve zadejte základní potřeby"
+                />
+                {coverage.basicNeedsDeclared && coverage.maxDebtorPromise <= 0 && (
+                  <p className="mt-1 text-xs font-semibold text-amber-200 print:text-amber-800">
+                    Podle zadaných údajů není z vašich peněz prostor pro závazný příslib.
+                  </p>
+                )}
+                {coverage.basicNeedsDeclared && coverage.maxDebtorPromise > 0 && (
+                  <p className="mt-1 text-xs text-slate-400 print:text-slate-600">
+                    Kalkulačka nepovolí více než {formatKc(coverage.maxDebtorPromise)}. Limit je dán nižší z částek: kolik chybí do minima a kolik zbývá nad zadanými základními potřebami.
+                  </p>
+                )}
+                {coverage.promiseWasLimited && (
+                  <p className="mt-1 text-xs font-semibold text-amber-200 print:text-amber-800">
+                    Dříve zadaná vyšší částka byla pro výpočet omezena na {formatKc(coverage.effectiveDebtorPromise)}.
+                  </p>
+                )}
+              </div>
+
+              {coverage.basicNeedsDeclared && (
+                <div className="rounded-lg border border-cyan-800/70 bg-cyan-950/20 p-2.5 text-xs text-cyan-100 print:border-cyan-200 print:bg-cyan-50 print:text-cyan-900">
+                  <div className="flex justify-between gap-4"><span>Závazný příslib</span><strong>− {formatKc(coverage.debtorPromise)}</strong></div>
+                  <div className="mt-1 flex justify-between gap-4 font-bold"><span>Po příslibu zůstává</span><strong>{formatKc(Math.max(0, coverage.retainedAfterStatutoryDeduction - coverage.debtorPromise))}</strong></div>
+                </div>
+              )}
+
+              <div className="space-y-1.5 text-xs text-slate-400 print:text-slate-600">
+                <p><strong className="text-slate-300 print:text-slate-700">Právně přesně:</strong> Dlužník může k návrhu připojit závazný příslib, že chybějící plnění bude hradit ze základní částky, která mu nesmí být sražena, nebo z jiných příjmů, které nelze postihnout výkonem rozhodnutí či exekucí. Takové plnění nesmí ohrozit základní hmotné potřeby dlužníka ani osob odkázaných výživou. Kalkulačka proto pro svůj orientační model vyžaduje údaj o základních potřebách a příslib omezuje.</p>
+                <p><strong className="text-cyan-300 print:text-cyan-800">Lidsky řečeno:</strong> Nejdřív uveďte, kolik peněz potřebujete měsíčně ponechat na základní životní potřeby. Kalkulačka pak nedovolí slíbit více, než vám nad touto částkou skutečně zbývá ani více, než kolik chybí do potřebného minima.</p>
               </div>
             </div>
           )}
@@ -302,6 +402,7 @@ const HlavniKalkulackaPage = () => {
       bezneMesicniVyzivne1: 0,
       // Doplňkové zdroje pro krytí minima oddlužení (jednotlivec)
       povolitPrislibDluznika1: false,
+      zakladniPotreby1: '',
       zavaznyPrislib1: '',
       povolitPlneniTretiOsoby1: false,
       pravidelnePlneniTretiOsoby1: '',
@@ -312,6 +413,7 @@ const HlavniKalkulackaPage = () => {
       bezneMesicniVyzivne2: 0,
       // Doplňkové zdroje pro krytí minima oddlužení (manželé)
       povolitPrislibDluznikaM: false,
+      zakladniPotrebyM: '',
       zavaznyPrislibM: '',
       povolitPlneniTretiOsobyM: false,
       pravidelnePlneniTretiOsobyM: '',
@@ -520,12 +622,21 @@ const HlavniKalkulackaPage = () => {
       ordinaryAlimony: data.bezneMesicniVyzivne1,
       configuredMinimum: 0,
     });
-    const coverageJ = calculateMinimumPaymentCoverage({
-      statutoryDeduction: insJ.srazka,
-      requiredMinimum: minimalniNutnaSrazkaJ,
-      debtorPromise: data.povolitPrislibDluznika1 ? data.zavaznyPrislib1 : 0,
-      thirdPartyContribution: data.povolitPlneniTretiOsoby1 ? data.pravidelnePlneniTretiOsoby1 : 0,
+    const promiseLimitJ = calculateDebtorPromiseLimit({
+      retainedAfterStatutoryDeduction: insJ.kVyplate,
+      basicNeeds: data.zakladniPotreby1,
+      deficitAfterStatutoryDeduction: Math.max(0, minimalniNutnaSrazkaJ - insJ.srazka),
+      requestedPromise: data.povolitPrislibDluznika1 ? data.zavaznyPrislib1 : 0,
     });
+    const coverageJ = {
+      ...calculateMinimumPaymentCoverage({
+        statutoryDeduction: insJ.srazka,
+        requiredMinimum: minimalniNutnaSrazkaJ,
+        debtorPromise: promiseLimitJ.effectiveDebtorPromise,
+        thirdPartyContribution: data.povolitPlneniTretiOsoby1 ? data.pravidelnePlneniTretiOsoby1 : 0,
+      }),
+      ...promiseLimitJ,
+    };
 
     // --- Společné oddlužení manželů ---
     // Každý manžel má vlastní srážku. Společné děti se započítávají každému zvlášť.
@@ -572,12 +683,21 @@ const HlavniKalkulackaPage = () => {
       ordinaryAlimony: bezneVyzivneM,
       configuredMinimum: 0,
     });
-    const coverageM = calculateMinimumPaymentCoverage({
-      statutoryDeduction: srazkaCelkemM,
-      requiredMinimum: minimalniNutnaSrazkaM,
-      debtorPromise: data.povolitPrislibDluznikaM ? data.zavaznyPrislibM : 0,
-      thirdPartyContribution: data.povolitPlneniTretiOsobyM ? data.pravidelnePlneniTretiOsobyM : 0,
+    const promiseLimitM = calculateDebtorPromiseLimit({
+      retainedAfterStatutoryDeduction: kVyplateCelkemM,
+      basicNeeds: data.zakladniPotrebyM,
+      deficitAfterStatutoryDeduction: Math.max(0, minimalniNutnaSrazkaM - srazkaCelkemM),
+      requestedPromise: data.povolitPrislibDluznikaM ? data.zavaznyPrislibM : 0,
     });
+    const coverageM = {
+      ...calculateMinimumPaymentCoverage({
+        statutoryDeduction: srazkaCelkemM,
+        requiredMinimum: minimalniNutnaSrazkaM,
+        debtorPromise: promiseLimitM.effectiveDebtorPromise,
+        thirdPartyContribution: data.povolitPlneniTretiOsobyM ? data.pravidelnePlneniTretiOsobyM : 0,
+      }),
+      ...promiseLimitM,
+    };
 
     return {
       ex,
@@ -631,6 +751,10 @@ const HlavniKalkulackaPage = () => {
       [enabledKey]: checked,
       ...(checked ? {} : { [amountKey]: '' }),
     }));
+  };
+
+  const handleValueChange = (name, value) => {
+    setData(prev => ({ ...prev, [name]: value }));
   };
 
   const handlePrint = () => window.print();
@@ -1190,6 +1314,7 @@ const HlavniKalkulackaPage = () => {
                   data={data}
                   onToggle={handleAdditionalSourceToggle}
                   onAmountChange={handleInputChange}
+                  onValueChange={handleValueChange}
                   modeLabel="jednotlivce"
                   fieldSuffix="1"
                 />
@@ -1315,6 +1440,7 @@ const HlavniKalkulackaPage = () => {
                   data={data}
                   onToggle={handleAdditionalSourceToggle}
                   onAmountChange={handleInputChange}
+                  onValueChange={handleValueChange}
                   modeLabel="společné oddlužení manželů"
                   fieldSuffix="M"
                 />
