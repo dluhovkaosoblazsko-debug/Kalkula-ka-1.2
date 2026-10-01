@@ -233,7 +233,13 @@ body {
 
   .report-section {
     margin: 0 0 14px;
-    break-inside: avoid-page;
+  }
+
+  .report-subsection,
+  .report-income-row,
+  .report-row,
+  .report-two-columns > div {
+    break-inside: avoid;
   }
 
   .report-section h3 {
