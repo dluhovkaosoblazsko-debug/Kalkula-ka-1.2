@@ -885,6 +885,7 @@ const MobileKalkulackaWizard = ({
             </p>
           </details>
         </Section>
+        {renderResultReview()}
         {renderResultActions()}
       </div>
     )
