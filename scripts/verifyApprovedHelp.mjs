@@ -38,6 +38,25 @@ try {
   const { default: Fields, Choice } = await server.ssrLoadModule('/src/kalkulacka/CaseFields.jsx');
   const { default: Results } = await server.ssrLoadModule('/src/kalkulacka/CaseResults.jsx');
   const render=(C, props)=>renderToStaticMarkup(React.createElement(C, props));
+  const instruction = 'Pokud je vaše odpověď ANO, políčko zaškrtněte. Pokud je odpověď NE, nechte ho prázdné.';
+  const instructionCount = html => (html.match(/data-checkbox-answer-hint/g) || []).length;
+  for (const checked of [false, true]) test(`Schválená instrukce nemění odpověď: ${checked}`,()=>{
+    const html=render(Choice,{isQuestion:true,checked,onChange:()=>{},helpKey:'alimonyA',helpId:'original-help',children:'Platíte někomu pravidelně výživné?'});
+    assert.equal(instructionCount(html),1);
+    assert.equal(html.split(instruction).length-1,1);
+    const hint=html.match(/<p id="([^"]+)" data-checkbox-answer-hint[^>]*>([^<]+)<\/p>/);
+    assert(hint); assert.equal(hint[2],instruction);
+    const input=html.match(/<input[^>]+>/)[0];
+    assert.equal(input.includes('checked=""'),checked);
+    const references=input.match(/aria-describedby="([^"]+)"/)[1].split(' ');
+    assert(references.includes(hint[1])); assert(references.includes('original-help'));
+    assert(html.indexOf('</label>')<html.indexOf(hint[0]));
+    assert(html.includes(catalogue.entries.alimonyA.plain));
+  });
+  test('Instrukce k odpovědi se automaticky nepřidává k jiným přepínačům',()=>{
+    const html=render(Choice,{checked:false,onChange:()=>{},children:'Výši běžných dluhů zatím neznám'});
+    assert.equal(instructionCount(html),0); assert(!html.includes(instruction));
+  });
   for(const [name,e] of Object.entries(catalogue.entries)) test(`Vykreslení ${name} beze změny textu`,()=>{
     const html=render(Help,{name});
     const expected=renderToStaticMarkup(React.createElement('p',null,e.plain)).slice(3,-4);
@@ -62,6 +81,9 @@ try {
     for(const step of status.flow) test(`${mode}/${step}: vysvětlivky nemění vstupní data`,()=>{
       const html=render(Fields,{step,mode,data,results,setData:()=>{},errors:[]});
       assert.equal(JSON.stringify(data),snapshot);
+      const expectedHints={family:mode==='manzele'?5:2,other:mode==='manzele'?4:2,debts:3,execution:1}[step] || 0;
+      assert.equal(instructionCount(html),expectedHints,`Instrukce v části ${step}`);
+      if(expectedHints) assert(html.includes(instruction));
       if(step==='family') {
         assert(html.includes('data-approved-help="'+(mode==='manzele'?'dependentsA':'dependentsSingle')+'"'));
         assert(html.includes('data-approved-help="enforcedAlimonyA"'));
@@ -74,7 +96,27 @@ try {
       assert(html.includes('data-approved-help="'+(mode==='jednotlivec'?'deductionIndividual':mode==='manzele'?'deductionSpouses':'deductionExecution')+'"'));
       assert(status.canExport);assert.equal(JSON.stringify(data),snapshot);
     });
+    test(`${mode}: otázka na více plátců obsahuje přesnou instrukci`,()=>{
+      const d=fixture(mode);
+      d.prijmy1.push({id:'second-income',typ:'mzda',castka:1000,pridelenaNezabavitelna:''});
+      const before=JSON.stringify(d);
+      const html=render(Fields,{step:mode==='manzele'?'incomeA':'income',mode,data:d,results:calculateCase(d,params,mode),setData:()=>{},errors:[]});
+      assert.equal(instructionCount(html),1);assert(html.includes(instruction));assert.equal(JSON.stringify(d),before);
+    });
   }
+  for(const mode of ['jednotlivec','manzele']) test(`${mode}: instrukce doprovází otázku na pomoc, nikoli přepínač dřívější pomoci`,()=>{
+    const d=createDefaultData(), suffix=mode==='manzele'?'M':'1';
+    d.prijmy1[0].castka=16800;d.prijmy2[0].castka=0;d.bezPostizitelnehoPrijmu2=true;
+    d[mode==='manzele'?'spolecneDeti':'vyzivovaneOsoby1']=1;
+    d['povolitPrislibDluznika'+suffix]=true;d['zakladniPotreby'+suffix]=12000;d['zavaznyPrislib'+suffix]=1000;
+    d['povolitPlneniTretiOsoby'+suffix]=true;d['pravidelnePlneniTretiOsoby'+suffix]=500;
+    const markup=()=>render(Fields,{step:'minimum',mode,data:d,results:calculateCase(d,params,mode),setData:()=>{},errors:[]});
+    const partial=markup();assert.equal(instructionCount(partial),1);assert(partial.includes(instruction));
+    d['zavaznyPrislib'+suffix]=mode==='manzele'?3267:2178;
+    const complete=markup();assert.equal(instructionCount(complete),0);
+    assert(complete.includes('Chci dál počítat s dříve zadanou pomocí jiné osoby'));
+    assert(complete.includes('data-approved-help="thirdParty"'));
+  });
   test('Vypnutí volby stále maže pouze příslušný údaj',()=>{
     const d=fixture('manzele');d.bezneMesicniVyzivne1=2000;d.bezneMesicniVyzivne2=900;
     const changed=toggleOptional(d,'bezneMesicniVyzivne1',false);
