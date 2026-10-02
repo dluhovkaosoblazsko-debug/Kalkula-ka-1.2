@@ -89,31 +89,81 @@ function MinimumFields({ data, setData, mode, results, errors }) {
   const promiseEnabled = data['povolitPrislibDluznika'+suffix], thirdEnabled = data['povolitPlneniTretiOsoby'+suffix];
   const set = (key,value) => setData(prev => ({...prev,[key]:value}));
   const toggle = (flag,field,checked) => setData(prev => ({...prev,[flag]:checked,...(!checked ? {[field]:''} : {})}));
-  return <div className="space-y-4">
-    <p className="rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm font-bold text-blue-900">{c.coveredByStatutoryDeduction
-      ? 'Samotná srážka už na potřebné minimum stačí. Zkontrolujte, zda chcete dál použít níže zadanou pomoc.'
-      : `K potřebnému měsíčnímu minimu ještě chybí ${formatKc(c.deficitAfterStatutoryDeduction)}.`}</p>
-    <Choice checked={promiseEnabled} onChange={checked => toggle('povolitPrislibDluznika'+suffix,promiseKey,checked)}
-      hint="Nejdřív ověříme, kolik vám musí zůstat na bydlení, jídlo a další základní potřeby.">Chci přidávat něco z peněz, které mi po srážce zůstanou</Choice>
-    {(promiseEnabled || present(data[promiseKey])) && <div className="space-y-3">
-      {!promiseEnabled && <p className="text-sm text-amber-800">Tuto dříve zadanou platbu teď nepočítáme. Zapněte možnost výše, nebo částku vymažte.</p>}
-      <NumberField field={needsKey} label="Kolik vám musí měsíčně zůstat na základní potřeby domácnosti?" value={data[needsKey]} onChange={v => set(needsKey,v)}
-        hint="Počítejte bydlení, jídlo a další nutné výdaje domácnosti. Kalkulačka sama neposoudí, zda vám zadaná částka opravdu stačí." error={errors.find(e => e.field === needsKey)?.message} />
-      <NumberField field={promiseKey} label="Kolik chcete měsíčně přidávat ze svých peněz?" value={data[promiseKey]} onChange={v => set(promiseKey,v)}
-        error={errors.find(e => e.field === promiseKey)?.message} />
-      <p className="text-sm text-slate-700">Po srážce vám zůstává {formatKc(c.retainedAfterStatutoryDeduction)}. Na doplnění minima můžete podle zadaných potřeb použít nejvýše {formatKc(c.maxDebtorPromise)}. Nyní počítáme s další platbou {formatKc(c.debtorPromise)}.</p>
-      {c.promiseWasLimited && <p role="status" className="text-sm font-bold text-amber-800">Zadali jste více, než lze podle tohoto výpočtu použít. Zadanou částku jsme nesmazali, ale počítáme jen s výše uvedenou částí.</p>}
-    </div>}
-    <Choice checked={thirdEnabled} onChange={checked => toggle('povolitPlneniTretiOsoby'+suffix,thirdKey,checked)}
-      hint="Například rodič, partner nebo jiná osoba, která se zaváže přispívat.">Bude vám někdo pravidelně přispívat na splátky?</Choice>
-    {(thirdEnabled || present(data[thirdKey])) && <>
-      {!thirdEnabled && <p className="text-sm text-amber-800">Tuto dříve zadanou pomoc teď nepočítáme. Zapněte možnost výše, nebo částku vymažte.</p>}
-      <NumberField field={thirdKey} label="Kolik vám bude tato osoba měsíčně přispívat?" value={data[thirdKey]} onChange={v => set(thirdKey,v)} error={errors.find(e => e.field === thirdKey)?.message}
-        hint="Počítejte jen s pravidelnou pomocí. Zda je dohoda platná a druhá osoba bude schopná platit, kalkulačka neověřuje." />
-      <p className="text-sm text-slate-700">Z příspěvku je k doplnění minima potřeba {formatKc(Math.min(c.thirdPartyContribution,c.deficitAfterDebtorPromise))}.</p>
+  // The missing payment is not the household's spending capacity. Keep both
+  // concepts separate; all amounts used for coverage still come from the core.
+  const missing = c.deficitAfterStatutoryDeduction;
+  const remaining = c.deficitAfterDebtorPromise;
+  const retained = c.retainedAfterStatutoryDeduction;
+  const afterOwnPayment = Math.max(0, retained - c.debtorPromise);
+  const needsError = errors.find(e => e.field === needsKey)?.message;
+  const promiseError = errors.find(e => e.field === promiseKey)?.message;
+  const thirdError = errors.find(e => e.field === thirdKey)?.message;
+  const needsKnown = c.basicNeedsDeclared && !needsError;
+  const ownPaymentKnown = present(data[promiseKey]) && !promiseError;
+  const showOwn = missing > 0 || promiseEnabled || present(data[promiseKey]) || present(data[needsKey]);
+  // Never hide an existing contribution merely because the user's own payment
+  // now covers the shortfall. It must remain available to review or switch off.
+  const showThird = remaining > 0 || thirdEnabled || present(data[thirdKey]);
+  const hasErrors = Boolean(needsError || promiseError || thirdError);
+  return <div className="space-y-4" data-testid="minimum-funding">
+    <div className="space-y-2 rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900" data-testid="funding-need">
+      <p className="font-bold">{missing > 0
+        ? `Do potřebné měsíční splátky chybí ${formatKc(missing)}.`
+        : 'Samotná srážka už potřebné měsíční minimum pokrývá. Nic navíc není potřeba doplňovat.'}</p>
+      {missing > 0 && <p>Tuto částku je potřeba zajistit navíc k vypočtené srážce. Můžete ji doplnit ze svých zbývajících peněz, pomocí jiné osoby nebo kombinací obojího.</p>}
+      <p>Po srážce vám{mode === 'manzele' ? ' společně' : ''} zůstává <strong>{formatKc(retained)}</strong>.</p>
+      {missing > 0 && (retained >= missing
+        ? <p>Pokud z těchto peněz doplníte celých {formatKc(missing)}, na živobytí vám zůstane <strong>{formatKc(retained - missing)} měsíčně</strong>.</p>
+        : <p>Samotné peníze po srážce na celé doplnění nestačí. Nejdřív je potřeba ponechat peníze na živobytí; zbytek musí pokrýt jiná pomoc.</p>)}
+    </div>
+    {showOwn && <>
+      <Choice checked={promiseEnabled} onChange={checked => toggle('povolitPrislibDluznika'+suffix,promiseKey,checked)}
+        hint="Nejdřív porovnáme, kolik vám po doplacení zůstane, s částkou, kterou potřebujete na živobytí.">Chci chybějící částku nebo její část hradit ze svých peněz</Choice>
+      {(promiseEnabled || present(data[promiseKey]) || present(data[needsKey])) && <div className="space-y-3">
+        {!promiseEnabled && <p className="text-sm text-amber-800">Tuto dříve zadanou platbu teď nepočítáme. Zapněte možnost výše, nebo částku vymažte.</p>}
+        <NumberField field={needsKey} label="Kolik z těchto peněz potřebujete každý měsíc na živobytí?" value={data[needsKey]} onChange={v => set(needsKey,v)}
+          hint="Počítejte bydlení, jídlo a další nutné výdaje, které z těchto peněz hradíte. Kalkulačka vychází z vašeho odhadu; sama neposoudí, zda vám tato částka stačí." error={needsError} />
+        {promiseEnabled && needsKnown && <p className="text-sm text-slate-700" data-testid="own-budget">{c.basicNeeds > retained
+          ? `Na zadané živobytí vám už po srážce chybí ${formatKc(c.basicNeeds - retained)}. Podle tohoto rozpočtu z vlastních peněz na doplnění splátky nic nezbývá.`
+          : `Po ponechání ${formatKc(c.basicNeeds)} na živobytí vám z vlastních peněz zbývá ${formatKc(c.availableAboveBasicNeeds)}.`}</p>}
+        <NumberField field={promiseKey} label={missing > 0
+          ? `Kolik z chybějících ${formatKc(missing)} budete měsíčně hradit ze svých peněz?`
+          : 'Dříve zadaná měsíční platba ze svých peněz'}
+          value={data[promiseKey]} onChange={v => set(promiseKey,v)} error={promiseError} />
+        {promiseEnabled && !needsKnown && <p className="text-sm text-slate-700">Nejdřív uveďte platnou částku na živobytí. Pak ukážeme, kolik z chybějící splátky můžete podle svého rozpočtu doplnit.</p>}
+        {promiseEnabled && needsKnown && ownPaymentKnown && <div className="space-y-2 text-sm text-slate-700" data-testid="own-funding-summary">
+          <p className="font-bold">{c.debtorPromise > 0
+            ? (remaining === 0 ? `Chybějících ${formatKc(missing)} doplníte ze svých peněz.` : `Ze svých peněz doplníte ${formatKc(c.debtorPromise)} měsíčně.`)
+            : 'Z vašich peněz teď do doplnění minima nic nezapočítáváme.'}</p>
+          <p>Po této platbě vám zůstane <strong>{formatKc(afterOwnPayment)} měsíčně</strong>.</p>
+          {c.debtorPromise > 0 && afterOwnPayment >= c.basicNeeds && <p>Podle zadaného rozpočtu vám zůstává alespoň částka, kterou jste uvedli na živobytí.</p>}
+          {c.promiseWasLimited && <div role="status" className="space-y-1 text-amber-800">
+            {number(data[promiseKey]) > c.availableAboveBasicNeeds && <p>Zadali jste {formatKc(data[promiseKey])}, ale po ponechání peněz na živobytí vám zbývá jen {formatKc(c.availableAboveBasicNeeds)}.</p>}
+            {number(data[promiseKey]) > missing && <p>K doplnění celého minima je potřeba {formatKc(missing)}, nikoli celá zadaná platba {formatKc(data[promiseKey])}.</p>}
+            <p>V této kontrole proto z vaší platby započítáváme {formatKc(c.debtorPromise)}. Zadanou částku jsme nesmazali; uvedený zůstatek vychází pouze ze započtené platby.</p>
+          </div>}
+        </div>}
+      </div>}
     </>}
-    <p className="text-sm font-bold text-slate-800">{c.finalDeficit > 0 ? `Do minima stále chybí ${formatKc(c.finalDeficit)}.` : 'Podle zadaných údajů je potřebné měsíční minimum pokryté.'}</p>
-    <p className="text-sm leading-relaxed text-slate-700">Další platby z vašich peněz a pomoc jiné osoby ověří měsíční minimum. Odhad dlouhodobého splacení dluhů je ale nezahrnuje.</p>
+    {showThird && <div className="space-y-3" data-testid="third-party-funding">
+      <p className="text-sm font-bold text-slate-800">{remaining > 0
+        ? `Po započtení vašich peněz je potřeba zajistit ještě ${formatKc(remaining)} měsíčně.`
+        : 'Minimum je už pokryté bez této pomoci. Dříve zadaný příspěvek zůstává dostupný ke kontrole a úpravě.'}</p>
+      <Choice checked={thirdEnabled} onChange={checked => toggle('povolitPlneniTretiOsoby'+suffix,thirdKey,checked)}
+        hint="Například rodič, partner nebo jiná osoba, která se zaváže pravidelně přispívat.">{remaining > 0
+          ? 'Bude vám tuto částku nebo její část pravidelně poskytovat někdo jiný?'
+          : 'Chci dál počítat s dříve zadanou pomocí jiné osoby'}</Choice>
+      {(thirdEnabled || present(data[thirdKey])) && <>
+        {!thirdEnabled && <p className="text-sm text-amber-800">Tuto dříve zadanou pomoc teď nepočítáme. Zapněte možnost výše, nebo částku vymažte.</p>}
+        <NumberField field={thirdKey} label="Kolik vám bude tato osoba měsíčně přispívat?" value={data[thirdKey]} onChange={v => set(thirdKey,v)} error={thirdError}
+          hint="Počítejte jen s pravidelnou pomocí. Zda je dohoda platná a druhá osoba bude schopná platit, kalkulačka neověřuje." />
+        {thirdEnabled && !thirdError && <p className="text-sm text-slate-700">K doplnění minima z této pomoci potřebujete {formatKc(Math.min(c.thirdPartyContribution,remaining))}.</p>}
+      </>}
+    </div>}
+    <p className="text-sm font-bold text-slate-800" data-testid="funding-status">{hasErrors
+      ? 'Nejdřív opravte označené částky. Potom ověříme, zda je potřebné měsíční minimum pokryté.'
+      : c.finalDeficit > 0 ? `Do potřebného měsíčního minima stále chybí ${formatKc(c.finalDeficit)}.` : 'Podle zadaných údajů je potřebné měsíční minimum pokryté.'}</p>
+    <p className="text-sm leading-relaxed text-slate-700">Tyto další platby započítáváme do kontroly měsíčního minima. Do odhadu, kolik dluhů za celé oddlužení splatíte, je tato verze kalkulačky zatím nezahrnuje.</p>
     <details className="text-xs leading-relaxed text-slate-600"><summary className="cursor-pointer font-bold">Právně přesně</summary><p className="mt-2">{MODEL_NOTE}</p></details>
   </div>;
 }
@@ -144,7 +194,7 @@ export default function CaseFields({ step, mode, data, setData, results, errors 
       const r = mode === 'manzele' ? results[`insM_${letter}`] : mode === 'nezabavitelna' ? results.ex : results.insJ;
       return <div key={p} className="space-y-4">
         {field({field:`vyzivovaneOsoby${p}`,question:mode === 'manzele' ? `Vyživuje manžel ${letter} ještě další osoby?` : 'Vyživujete děti nebo jiné osoby?',label:`Počet vyživovaných osob${suffix}`,integer:true,hint:mode === 'manzele' ? 'Například děti z předchozího vztahu. Společné děti nepočítejte znovu.' : 'Manžela nebo partnera sem nepočítejte; posuzuje se zvlášť.'})}
-        {field({field:`osobySVykonemProVyzivne${p}`,question:mode === 'manzele' ? `Vymáhá někdo po manželovi ${letter} dlužné výživné přes soud nebo exekutora?` : 'Vymáhá po vás někdo dlužné výživné přes soud nebo exekutora?',label:`Počet osob s vymáhaným výživným${suffix}`,integer:true,max:r.pocetVsechOsob,hint:'Tady uveďte počet osob, na které se výživné právě vymáhá. Pravidelnou měsíční platbu výživného zadáte zvlášť.',legal:'Na osobu, v jejíž prospěch trvá nařízený výkon rozhodnutí nebo exekuce pro výživné, se jedna čtvrtina nezabavitelné částky nezapočítává.'})}
+        {field({field:`osobySVykonemProVyzivne${p}`,question:mode === 'manzele' ? `Vymáhá někdo po manželovi ${letter} dlužné výživné přes soud nebo exekutora?` : 'Vymáhá po vás někdo dlužné výživné přes soud nebo exekutora?',label:`Počet osob s vymáhaným výživným${suffix}`,integer:true,max:r.pocetVsechOsob,hint:'Tady uveďďte počet osob, na které se výživné právě vymáhá. Pravidelnou měsíční platbu výživného zadáte zvlášť.',legal:'Na osobu, v jejíž prospěch trvá nařízený výkon rozhodnutí nebo exekuce pro výživné, se jedna čtvrtina nezabavitelné částky nezapočítává.'})}
       </div>; })}
     {mode !== 'manzele' && <Choice checked={data.partnerProNezabavitelnou1} onChange={v=>set('partnerProNezabavitelnou1',v)}
       hint="Jde o starobní důchod, invalidní důchod II. nebo III. stupně nebo sirotčí důchod. Manžela či partnera nepřidávejte znovu mezi osoby výše.">{results.duchodPovinny1 ? 'Mám manžela/manželku nebo partnera/partnerku' : 'Manžel nebo partner pobírá některý z uvedených důchodů'}</Choice>}
