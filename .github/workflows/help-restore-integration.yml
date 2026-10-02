@@ -22,7 +22,13 @@ jobs:
           node-version: '22'
           cache: npm
       - name: Restore exact historical wording without editing calculations
-        run: python3 scripts/restoreApprovedHelp.py
+        run: |
+          python3 scripts/restoreApprovedHelp.py
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('src/kalkulacka/CaseFields.jsx')
+          p.write_text(p.read_text().replace('\n    \n', '\n\n'))
+          PY
       - name: Install build dependencies
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Verify
@@ -41,7 +47,7 @@ jobs:
           git diff --check
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add src/kalkulacka/approvedHelp.json src/kalkulacka/CaseFields.jsx src/kalkulacka/CaseResults.jsx src/kalkulacka/HlavniKalkulackaPage.jsx scripts/verifyClearLanguage.mjs scripts/verifyMinimumFunding.mjs .github/workflows/progressive-spouses.yml
+          git add src/kalkulacka/approvedHelp.json src/kalkulacka/CaseFields.jsx src/kalkulacka/CaseResults.jsx src/kalkulacka/HlavniKalkulackaPage.jsx scripts/verifyClearLanguage.mjs scripts/verifyMinimumFunding.mjs
           git commit -m 'Obnovit původní odsouhlasené vysvětlivky bez přepisování'
           git push origin HEAD:restore-approved-help
           git rev-parse HEAD > dist/build-commit.txt
