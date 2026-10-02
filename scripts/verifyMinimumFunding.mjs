@@ -101,7 +101,7 @@ try {
       assert.equal(c.finalDeficit, 0);
       assert(status.canExport);
       assert(text.includes('Podle zadaných údajů je potřebné měsíční minimum pokryté.'));
-      assert(text.includes('tato verze kalkulačky zatím nezahrnuje'));
+      assert(text.includes('Do odhadu, kolik celkem zaplatíte věřitelům, je zatím nezapočítává.'));
       assert(text.includes('Právně přesně'));
     });
   }

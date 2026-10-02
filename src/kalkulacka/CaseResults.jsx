@@ -1,6 +1,7 @@
 import React from 'react';
 import { caseStatus, formatKc, MODEL_NOTE, EXECUTION_NOTE, sectionReviewed, number, present } from './caseState.js';
 import { nextStepMessage, SHORT_MODEL_NOTE } from './uiCopy.js';
+import ApprovedHelp from './ApprovedHelp';
 import CalculationBreakdown from './CalculationBreakdown';
 
 export function percentageText(data, mode, results, params) {
@@ -53,11 +54,12 @@ export function InputSummary({ data, mode, step }) {
 }
 
 function presentIncome(value) { return !present(value) ? 'zatím nezadáno' : formatKc(value); }
-function Card({ label, value, hint, testId }) {
+function Card({ label, value, hint, testId, helpKey }) {
   return <div data-testid={testId} className="rounded-xl border border-slate-200 bg-white p-4">
     <p className="text-sm font-bold text-slate-600">{label}</p>
     <p className="mt-2 text-2xl font-black text-slate-900">{value}</p>
     {hint && <p className="mt-2 text-xs leading-relaxed text-slate-600">{hint}</p>}
+    {helpKey && <ApprovedHelp name={helpKey} />}
   </div>;
 }
 
@@ -88,18 +90,21 @@ export default function CaseResults({ data, mode, results, params }) {
       <div className="mt-3 space-y-2">{blocking.map((error, i) => <p key={i}>{error.message}</p>)}</div>
     </details> : <>
       <div className="grid gap-3 lg:grid-cols-2">
-        <Card testId="monthly-deduction" label={execution ? 'Měsíčně se vám může srazit až' : spouses ? 'Měsíčně se vám oběma srazí' : 'Měsíčně se vám srazí'} value={formatKc(deduction)} />
-        <Card testId="retained-after-deduction" label={spouses ? 'Po srážkách vám oběma zůstane' : 'Po srážce vám zůstane'} value={formatKc(retained)} />
+        <Card helpKey={execution ? "deductionExecution" : spouses ? "deductionSpouses" : "deductionIndividual"} testId="monthly-deduction" label={execution ? 'Měsíčně se vám může srazit až' : spouses ? 'Měsíčně se vám oběma srazí' : 'Měsíčně se vám srazí'} value={formatKc(deduction)} />
+        <Card helpKey={execution ? "retainedExecution" : spouses ? "retainedSpouses" : "retainedIndividual"} testId="retained-after-deduction" label={spouses ? 'Po srážkách vám oběma zůstane' : 'Po srážce vám zůstane'} value={formatKc(retained)} />
       </div>
       {execution ? <>
         {results.ex.nahradaPlatci > 0 && <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-700">
           <p>Náhrada plátci: {formatKc(results.ex.nahradaPlatci)}. Je již součástí srážky, neplatíte ji navíc.</p>
+          <ApprovedHelp name="feeResult" />
           <p>Na dluh po náhradě: {formatKc(results.ex.srazkaCista)}.</p>
+          <ApprovedHelp name="debtAfterFee" />
         </div>}
         <p className="text-xs leading-relaxed text-slate-600">{EXECUTION_NOTE}</p>
       </> : <>
         <section data-testid="minimum-summary" className={`rounded-xl border p-4 text-sm ${c.finalDeficit > 0 ? 'border-red-200 bg-red-50 text-red-800' : 'border-green-200 bg-green-50 text-green-800'}`}>
           <h3 className="font-bold">Stačí to na potřebné měsíční minimum?</h3>
+          <ApprovedHelp name="minimumRule" />
           <p className="mt-2 text-base font-black">{c.finalDeficit > 0 ? `Do potřebného minima chybí ${formatKc(c.finalDeficit)} měsíčně.` : 'Podle zadaných údajů je měsíční minimum pokryté.'}</p>
           <p className="mt-2 text-xs leading-relaxed">Samotné pokrytí minima neznamená schválení oddlužení.</p>
           <details className="mt-3"><summary className="cursor-pointer font-bold">Kolik je potřeba a co se započítává?</summary>
@@ -107,6 +112,7 @@ export default function CaseResults({ data, mode, results, params }) {
               <p>Potřebné minimum: {formatKc(c.requiredMinimum)} měsíčně.</p>
               <p>Zákonná srážka: {formatKc(deduction)}.</p>
               <p>Odměna a výdaje insolvenčního správce: {formatKc(spouses ? params.odmenaSpravceManzele : params.odmenaSpravceJednotlivec)}.</p>
+              <ApprovedHelp name={spouses ? "feeSpouses" : "feeIndividual"} />
               {c.debtorPromise > 0 && <p>Z vašich dalších peněz se započítává: {formatKc(c.debtorPromise)}.</p>}
               {c.thirdPartyContribution > 0 && <p>Od jiné osoby je k doplnění minima potřeba: {formatKc(Math.min(c.thirdPartyContribution, c.deficitAfterDebtorPromise))}.</p>}
             </div>
@@ -122,16 +128,16 @@ export default function CaseResults({ data, mode, results, params }) {
         </div>}
         <section className="space-y-3 rounded-xl border border-slate-200 bg-white p-4" data-testid="repayment-estimate">
           <h3 className="text-base font-black text-slate-900">Kolik by se mohlo splatit z běžných dluhů?</h3>
-          <p className="text-sm leading-relaxed text-slate-700">{SHORT_MODEL_NOTE}</p>
+          <ApprovedHelp name="modelLimit" />
           <div className="grid gap-3 lg:grid-cols-2">
-            <Card label="Na běžné dluhy ze zákonné srážky měsíčně" value={formatKc(spouses ? results.proVeriteleM : results.proVeriteleJ)} hint="Po odečtení odměny a výdajů správce a zadaného výživného." />
-            <Card label="Odhad splacení běžných dluhů" value={percentageText(data, mode, results, params)} hint={debtHint} />
+            <Card helpKey={spouses ? "creditorsSpouses" : "creditorsIndividual"} label="Na běžné dluhy ze zákonné srážky měsíčně" value={formatKc(spouses ? results.proVeriteleM : results.proVeriteleJ)} />
+            <Card helpKey={!data.dluhNeznamy && number(data.dluhyNezajistene) > 0 && sectionReviewed(data, mode, "debts", params) ? "satisfaction" : undefined} label="Odhad splacení běžných dluhů" value={percentageText(data, mode, results, params)} hint={debtHint} />
           </div>
           <details className="text-xs leading-relaxed text-slate-600"><summary className="cursor-pointer font-bold">Podrobnosti a omezení odhadu</summary><p className="mt-2">{MODEL_NOTE}</p></details>
         </section>
       </>}
       <details className="rounded-xl border border-slate-200 bg-white p-4 text-slate-800"><summary className="cursor-pointer text-sm font-bold">Jak jsme k výsledku došli?</summary>
-        <div className="mt-4 space-y-4">{spouses ? <>{['A', 'B'].map(letter => <section key={letter}><h3 className="mb-2 font-bold">Manžel {letter}</h3><CalculationBreakdown result={results[`insM_${letter}`]} /></section>)}<p>Celková srážka: {formatKc(results.insM_A.srazka)} + {formatKc(results.insM_B.srazka)} = {formatKc(results.srazkaCelkemM)}.</p></> : <CalculationBreakdown result={execution ? results.ex : results.insJ} />}</div>
+        <div className="mt-4 space-y-4"><ApprovedHelp name="protectedAmount" />{spouses && <ApprovedHelp name="separateSpouseDeduction" />}{spouses ? <>{['A', 'B'].map(letter => <section key={letter}><h3 className="mb-2 font-bold">Manžel {letter}</h3><CalculationBreakdown result={results[`insM_${letter}`]} /></section>)}<p>Celková srážka: {formatKc(results.insM_A.srazka)} + {formatKc(results.insM_B.srazka)} = {formatKc(results.srazkaCelkemM)}.</p></> : <CalculationBreakdown result={execution ? results.ex : results.insJ} />}</div>
       </details>
       <p className="text-xs leading-relaxed text-slate-600">Výpočet je orientační. Neověřuje právní povahu konkrétních příjmů a pohledávek, budoucí změny ani všechny náklady řízení.</p>
     </>}

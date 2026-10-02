@@ -1,0 +1,302 @@
+{
+  "sourceCommit": "1ad8344381a6373ec2017d90b8b0dc3b901354a7",
+  "plainCommit": "6e95c5ecc03dedbee10b71fb6b050402c2272f61",
+  "sourcePath": "src/kalkulacka/HlavniKalkulackaPage.jsx",
+  "sourceSha256": "86e1a841dc0cb8396c6acbf1da38b88a02da67a7d9c3e355648149d2521288fc",
+  "entries": {
+    "incomeSources": {
+      "plain": "Srážky se mohou provádět nejen ze mzdy, ale také z dalších příjmů, například z důchodu, odměny z DPP/DPČ, nemocenského, podpory v nezaměstnanosti nebo rodičovského příspěvku („rodičáku“). Každý příjem zadejte samostatně; kalkulačka to potřebuje pro uplatnění zvláštních pravidel.",
+      "legal": "Srážky se mohou provádět nejen ze mzdy, ale také z dalších zákonem určených příjmů, například z důchodu, DPP/DPČ, nemocenského, peněžité pomoci v mateřství nebo podpory v nezaměstnanosti. Každý zdroj příjmu zadejte samostatně; typ důchodu kalkulačka používá i pro zvláštní pravidla srážek.",
+      "sourceLine": 103,
+      "sha256": "0f1b7a1b63550057781fc8c3a02db0e49d00b1b8190de92113bec21fa0c4c9dd"
+    },
+    "incomeType": {
+      "plain": "Vyberte, o jaký příjem jde. Kalkulačka podle typu příjmu pozná, jaká pravidla má při výpočtu použít – například u některých druhů důchodů.",
+      "legal": "",
+      "sourceLine": 112,
+      "sha256": "9da12a9c580c8ff1e431d798031079e738728248f948461cdecb6eecfbdac906"
+    },
+    "incomeAmount": {
+      "plain": "Zadejte částku, kterou byste dostali, kdyby vám z ní nebyly strhávány peníze kvůli dluhům.",
+      "legal": "Zadejte čistou měsíční částku před provedením exekuční nebo insolvenční srážky. U mzdy jde o částku po odečtení daně a povinného pojistného; u důchodu nebo jiné dávky o měsíční částku před srážkou.",
+      "sourceLine": 120,
+      "sha256": "29d2c3dc19a4b37ba17e61ee2c8f7854b69e8d36dfbeb75753688e0d04d0af24"
+    },
+    "payerAllocation": {
+      "plain": "Pokud příjem dostáváte od více plátců, například od zaměstnavatele a ČSSZ, nezabavitelná částka se mezi ně rozdělí. Zadejte částku, kterou vám má ponechat tento plátce.",
+      "legal": "Pokud srážky provádí několik plátců současně, určí se, jakou část nezabavitelné částky má každý z nich ponechat. Pro přesný výpočet zadejte částku přidělenou právě tomuto plátci; součet má odpovídat celkové nezabavitelné částce.",
+      "sourceLine": 129,
+      "sha256": "2621be1d58784dc7b66a7c56fb00794e03ff4ef2cdda42698be835a32d276649"
+    },
+    "ownPromise": {
+      "plain": "Z vašeho příjmu se podle zákona nesrazí dost peněz. Můžete proto dobrovolně slíbit, že budete každý měsíc přidávat něco navíc ze své nezabavitelné částky. Vám pak zůstane méně, ale chybějící částku pro oddlužení tím můžete dorovnat.",
+      "legal": "Dlužník může k návrhu připojit závazný příslib, že chybějící plnění bude hradit ze základní částky, která mu nesmí být sražena, nebo z jiných příjmů, které nelze postihnout výkonem rozhodnutí či exekucí. Takové plnění nesmí ohrozit základní hmotné potřeby dlužníka ani osob odkázaných výživou. Kalkulačka posuzuje pouze matematické pokrytí, nikoli udržitelnost příslibu.",
+      "sourceLine": 196,
+      "sha256": "e79c1fd6b5d6b079015cb7482b4c5495bc175c16b88ea60f5fdf810d9a781da6"
+    },
+    "thirdParty": {
+      "plain": "Pokud vám do potřebné částky stále něco chybí, může vám pomoci někdo jiný, například rodič nebo partner. Ten se zaváže každý měsíc hradit do oddlužení určitou částku za vás.",
+      "legal": "Potřebné plnění může doplnit závazek třetí osoby poskytovat peníze ve prospěch majetkové podstaty, například na základě darovací smlouvy nebo smlouvy o důchodu.",
+      "sourceLine": 214,
+      "sha256": "3aa9c929fb2820ac6f6ebbff7be2edd729e5c089340b6384f04e324892b6666c"
+    },
+    "modelLimit": {
+      "plain": "Závazný příslib a pomoc třetí osoby kalkulačka používá jen pro ověření, zda máte dostatek peněz pro vstup do oddlužení. Do odhadu, kolik celkem zaplatíte věřitelům, je zatím nezapočítává.",
+      "legal": "Doplňkové zdroje slouží v této verzi ke kontrole minima. Model dlouhodobého uspokojení věřitelů níže pracuje pouze se zákonnou srážkou, protože pravidelnost a trvání příslibu či plnění třetí osoby musí být doloženy.",
+      "sourceLine": 250,
+      "sha256": "fb5018fda93b2cc28086b89cca8f063b85c8238e82a705f77053bc37f538d3f4"
+    },
+    "commonChildren": {
+      "plain": "Zadejte počet společných dětí, o které se spolu staráte. Kalkulačka je započítá každému z vás.",
+      "legal": "Společně vyživované dítě se při srážkách z příjmu obou manželů započítává do nezabavitelné částky každému z nich zvlášť.",
+      "sourceLine": 724,
+      "sha256": "80b372e78b174e41281e8dad50c4ad490fb5f40872d012e56b21d53bd3ace356"
+    },
+    "dependentsA": {
+      "plain": "Uveďte další osoby, které tento manžel vyživuje, například děti z předchozího vztahu. Společné děti sem už nepočítejte.",
+      "legal": "Uveďte další osoby, kterým je tento dlužník povinen poskytovat výživné a které nejsou zahrnuty mezi společně vyživované děti. Za každou započitatelnou osobu se zvyšuje nezabavitelná částka o jednu čtvrtinu základní nezabavitelné částky.",
+      "sourceLine": 763,
+      "sha256": "84b17a0fa20cc69f6adb29a815c56b7f9652713a594d8f642c569fcdf718d902"
+    },
+    "dependentsSingle": {
+      "plain": "Zadejte počet dětí a dalších osob, které vyživujete. Manžela nebo partnera sem nepočítejte.",
+      "legal": "Uveďte osoby, kterým jste povinen/povinna poskytovat výživné. Za každou započitatelnou osobu se zvyšuje nezabavitelná částka o jednu čtvrtinu základní nezabavitelné částky. Manžela/partnera sem nepočítejte; ten má zvláštní pravidlo.",
+      "sourceLine": 764,
+      "sha256": "efdd6a93f38843b9a038cdcf1496a755117307287def9aacd264a48530b78c19"
+    },
+    "enforcedAlimonyA": {
+      "plain": "Pokud dlužíte na výživném a kvůli tomu proti vám běží exekuce, osoba, na kterou výživné dlužíte, se vám do nezabavitelné částky nezapočítá.",
+      "legal": "Jedna čtvrtina nezabavitelné částky se nezapočítá na osobu, v jejíž prospěch byl nařízen výkon rozhodnutí nebo exekuce pro výživné, pokud toto vymáhání stále trvá.",
+      "sourceLine": 772,
+      "sha256": "3b949e8614ca0ea7765f3782298deb9a114085d8f2efb8e5951cca5edb2be196"
+    },
+    "partnerOwnPension": {
+      "plain": "Pokud pobíráte starobní, invalidní důchod II. nebo III. stupně nebo sirotčí důchod a máte manžela nebo partnera, zvýší se vám nezabavitelná částka.",
+      "legal": "Kalkulačka z vašich příjmů rozpoznala starobní důchod, invalidní důchod II. nebo III. stupně nebo sirotčí důchod. Pokud máte manžela/manželku nebo partnera/partnerku, započte se na něj/ni jedna čtvrtina nezabavitelné částky.",
+      "sourceLine": 790,
+      "sha256": "93f3825f6ada8a2c77d523390e5c2d0dc90b7eb1cb1657ae18917d69e131d4a7"
+    },
+    "partnerPension": {
+      "plain": "Pokud starobní, invalidní důchod II. nebo III. stupně nebo sirotčí důchod pobírá váš manžel nebo partner, zvýší se vám nezabavitelná částka.",
+      "legal": "Pokud rozhodný důchod nepobíráte vy, započte se na manžela/partnera jedna čtvrtina nezabavitelné částky jen tehdy, pokud byl starobní důchod, invalidní důchod II. nebo III. stupně nebo sirotčí důchod přiznán jemu/jí.",
+      "sourceLine": 794,
+      "sha256": "4ae5d22031155adec7f8ddba13829009fa8430f0714db5d43f69c8d48e6b8069"
+    },
+    "alimonyA": {
+      "plain": "Uveďte měsíční výživné, které platíte na děti, které nemáte ve své péči.",
+      "legal": "Uveďte běžné zákonné výživné, které máte během oddlužení pravidelně hradit. Tato pohledávka se hradí před nezajištěnými věřiteli a ovlivňuje i minimální částku potřebnou pro oddlužení.",
+      "sourceLine": 811,
+      "sha256": "381d0e9a10bddb2feb9931e3931465b09e2d12953a9ea8b1402f15335edac0a9"
+    },
+    "protectedIncomeA": {
+      "plain": "Sem patří například příspěvek na péči, dávky pro osoby se zdravotním postižením, náhradní výživné, daňový bonus nebo výživné na dítě. Důchod, nemocenská, mateřská ani podpora v nezaměstnanosti sem nepatří.",
+      "legal": "Uveďte pouze příjmy, z nichž se podle pravidel srážek ze mzdy a jiných příjmů srážka neprovádí. Důchod, nemocenské, peněžitá pomoc v mateřství, podpora v nezaměstnanosti, DPP/DPČ ani nejednorázové dávky státní sociální podpory sem obecně nepatří.",
+      "sourceLine": 818,
+      "sha256": "841a97402014561422f8026c1f514dbcba5753ebc4f85da6bf5f5636767d00af"
+    },
+    "dependentsB": {
+      "plain": "Uveďte další osoby, které tento manžel vyživuje, například děti z předchozího vztahu. Společné děti sem už nepočítejte.",
+      "legal": "Uveďte další osoby, kterým je druhý dlužník povinen poskytovat výživné a které nejsou zahrnuty mezi společně vyživované děti. Za každou započitatelnou osobu se zvyšuje jeho nezabavitelná částka o jednu čtvrtinu základní nezabavitelné částky.",
+      "sourceLine": 847,
+      "sha256": "0900d8a281239e806132671cfb4dd16c34f7f035bedc55e66debc8f2221d23f7"
+    },
+    "enforcedAlimonyB": {
+      "plain": "Pokud tento manžel dluží na výživném a kvůli tomu proti němu běží exekuce, osoba, na kterou výživné dluží, se mu do nezabavitelné částky nezapočítá.",
+      "legal": "Uveďte počet vyživovaných osob druhého dlužníka, v jejichž prospěch právě trvá výkon rozhodnutí nebo exekuce pro výživné. Na takovou osobu se jedna čtvrtina nezabavitelné částky nezapočítává.",
+      "sourceLine": 853,
+      "sha256": "7720bb8c3dbe2b90910bb55d81a0d92e9b2a70112955977f2146e4ede7a08c55"
+    },
+    "alimonyB": {
+      "plain": "Pokud druhý manžel pravidelně platí alimenty, napište je sem. Tyto peníze se v oddlužení hradí před běžnými nezajištěnými dluhy.",
+      "legal": "Uveďte běžné zákonné výživné druhého manžela hrazené během oddlužení. Hradí se před nezajištěnými věřiteli a zvyšuje potřebné minimální měsíční plnění.",
+      "sourceLine": 868,
+      "sha256": "897d73c0733e22fabc35800fce203caddc4c17d1639d52195113e5e5109c73c3"
+    },
+    "protectedIncomeB": {
+      "plain": "Sem patří například příspěvek na péči, dávky pro osoby se zdravotním postižením, náhradní výživné, daňový bonus nebo výživné na dítě. Důchod, nemocenská, mateřská ani podpora v nezaměstnanosti sem nepatří.",
+      "legal": "Uveďte pouze příjmy druhého manžela, z nichž se podle pravidel srážek ze mzdy a jiných příjmů srážka neprovádí. Kalkulačka právní povahu konkrétního příjmu sama neověřuje.",
+      "sourceLine": 874,
+      "sha256": "c3292a1ac3800e17c3c6158410c9c9ec74e2dec43906055bd81cc21b476a5668"
+    },
+    "executionCount": {
+      "plain": "Pokud proti vám běží 4 nebo více exekucí, může se vám srážet více peněz než při 1–3 exekucích. U některých důchodců platí výjimka.",
+      "legal": "Při nejméně čtyřech současně vedených výkonech rozhodnutí nebo exekucích k vymožení splatných peněžitých pohledávek se za zákonných podmínek srážejí dvě třetiny zbytku příjmu, i když jde jinak o nepřednostní dluh. Existuje zvláštní výjimka pro některé důchodce s nízkou jednou třetinou.",
+      "sourceLine": 887,
+      "sha256": "c8d96fc12215b5f8c38c41aac79f0d0b4fae1f1ce36245b5533111e67047a965"
+    },
+    "executionType": {
+      "plain": "Běžná půjčka nebo nezaplacená faktura je obvykle nepřednostní dluh. Přednostní jsou například dluhy na výživném, náhrada škody na zdraví, daně, dluhy na sociálním či zdravotním pojištění a některé přeplatky na dávkách. U přednostního dluhu je vyšší srážka.",
+      "legal": "U nepřednostní pohledávky se zpravidla sráží jedna třetina zbytku příjmu. U přednostních pohledávek se srážejí dvě třetiny; mezi přednostní patří například výživné, náhrada újmy na zdraví, některé daně nebo pojistné. Výživné má v druhé třetině zvláštní pořadí.",
+      "sourceLine": 896,
+      "sha256": "ccd7a64ba521cdd277b2b4aa8f1438a44136e0d5c567a6e405e156d40a98036d"
+    },
+    "payerFee": {
+      "plain": "Zaměstnavatel nebo jiný plátce si může ze sražených peněz ponechat až 50 Kč za zpracování srážky. Vám se tato částka nestrhne navíc, jen o ni méně odejde na dluh.",
+      "legal": "Plátci mzdy nebo jiného příjmu může náležet paušální náhrada nákladů až 50 Kč za měsíc, nejvýše však jedna třetina sražené částky zaokrouhlená nahoru. Tato náhrada se hradí z už provedené srážky, nikoli navíc z příjmu dlužníka.",
+      "sourceLine": 907,
+      "sha256": "202ca3d2803bdb57907cc2eb7ae42d8a95418892ca3806c55216a31b3a58ead5"
+    },
+    "term": {
+      "plain": "Oddlužení běžně trvá 3 roky. Pokud jste už v posledních 20 letech oddlužením prošli a byli osvobozeni od zbytku dluhů, trvá nové oddlužení 5 let.",
+      "legal": "Kalkulačka používá 36 měsíců jako standardní dobu oddlužení. Variantu 60 měsíců použijte zejména tehdy, pokud bylo dlužníku v posledních 20 letech před podáním nového návrhu přiznáno osvobození od placení pohledávek zahrnutých do předchozího oddlužení.",
+      "sourceLine": 918,
+      "sha256": "eb3835ed17c2591efc1e2e33cb650cb67f7535af22897152fa7f99062ae87832"
+    },
+    "assetProceeds": {
+      "plain": "Pokud se v oddlužení bude prodávat váš majetek, odhadněte částku, která z jeho prodeje půjde na dluhy. Například peníze z prodeje auta.",
+      "legal": "Zadejte odhad částky, která po případném zpeněžení majetku a souvisejících nákladech skutečně připadne nezajištěným věřitelům. Ne každý majetek musí být v oddlužení zpeněžen.",
+      "sourceLine": 927,
+      "sha256": "fdc0ebf74f23e730ceca7113994002500a596a5092621cf63ededcd9aacabfa3"
+    },
+    "unsecuredDebt": {
+      "plain": "Uveďte běžné dluhy, za které neručíte konkrétním majetkem. Typicky půjčky, úvěry, kreditní karty, kontokorenty nebo nezaplacené faktury.",
+      "legal": "Jde o pohledávky věřitelů, které nejsou zajištěny konkrétním majetkem. Z této částky kalkulačka počítá modelovou míru uspokojení nezajištěných věřitelů.",
+      "sourceLine": 935,
+      "sha256": "5a1894d77500ac2773f79034792da7b7ad7642523ee8c798b732e871f33ce132"
+    },
+    "securedDebt": {
+      "plain": "Uveďte dluhy, za které ručíte konkrétním majetkem, například hypotéku zajištěnou domem. Pokud se tento majetek v oddlužení prodá, peníze z prodeje jdou přednostně na tento dluh. Pokud nestačí na celý dluh, zbytek může pokračovat jako nezajištěný dluh.",
+      "legal": "Zajištěný věřitel se v rozsahu zajištění uspokojuje ze zpeněžení majetku, kterým je jeho pohledávka zajištěna. Pokud hodnota zajištění nestačí, rozdíl se může za zákonných podmínek považovat za nezajištěnou pohledávku. Toto pole je zde informativní a nevstupuje přímo do modelového procenta nezajištěných věřitelů.",
+      "sourceLine": 953,
+      "sha256": "4ff898ab8fb7358706ac07493da0aea48060bd218de34cbfb06a592627c03039"
+    },
+    "nonDischargeable": {
+      "plain": "Tyto dluhy se vám ani po úspěšném oddlužení neodpustí. Patří sem například dlužné výživné, náhrada škody na zdraví, škoda způsobená úmyslně nebo peněžitý trest za úmyslný trestný čin.",
+      "legal": "Osvobození se nedotýká například zákonného výživného, náhrady škody způsobené na zdraví, škody způsobené úmyslným porušením právní povinnosti, některých peněžitých trestů nebo majetkových sankcí za úmyslný trestný čin a pohledávky insolvenčního správce na odměnu a hotové výdaje. Toto pole je informativní a nevstupuje do modelového procenta nezajištěných věřitelů.",
+      "sourceLine": 959,
+      "sha256": "e0a10c2488d60b34364335d53390d4d3d2f9ad8397ae5a1e6f0d5199a2d9ec38"
+    },
+    "baseCoefficient": {
+      "plain": "Hodnota určená zákonem pro výpočet nezabavitelné částky. Pro rok 2026 je 85 %. Běžně ji neměňte.",
+      "legal": "Tento koeficient určuje, jaká část zákonného základu se použije pro výpočet základní nezabavitelné částky na dlužníka. Pro výpočty roku 2026 kalkulačka používá 85 %. Z této základní částky se následně odvozují i čtvrtiny za započitatelné vyživované osoby.",
+      "sourceLine": 992,
+      "sha256": "bae74ca9b3c6215aa4f19822e494da777876f8ce7c566cec7cce0e58ee3abc83"
+    },
+    "fullCoefficient": {
+      "plain": "Tato hodnota určuje hranici, nad kterou se část příjmu srazí celá. Pro rok 2026 je 1,9. Běžně ji neměňte.",
+      "legal": "Tento koeficient se používá pro výpočet hranice, nad kterou je část zbytku příjmu po odečtení nezabavitelné částky postižitelná bez omezení. Pro rok 2026 kalkulačka používá násobek 1,9. Část nad takto vypočtenou hranicí se už nerozděluje na třetiny a připočítává se ke srážce celá.",
+      "sourceLine": 998,
+      "sha256": "649ceffafafea8b93386926fae0046be414529cc62e27479d464c458186fa1ef"
+    },
+    "minimumRule": {
+      "plain": "Pro vstup do oddlužení musíte každý měsíc uhradit alespoň odměnu a náklady insolvenčního správce, stejnou částku pro věřitele a případné běžné výživné. Potřebné minimum se spočítá automaticky.",
+      "legal": "Kalkulačka vychází z pravidla „1 + 1“: měsíční odměna a hotové výdaje správce + alespoň stejná částka pro ostatní věřitele + zadané běžné zákonné výživné. Nejde o samostatně editovatelnou zákonnou konstantu.",
+      "sourceLine": 1013,
+      "sha256": "2c3088c9eef98f5c8cf1d9fafe37c45d10e8a44a99cd2a81ebfbcc74fd7d4b08"
+    },
+    "retainedExecution": {
+      "plain": "Orientačně tolik peněz vám po exekuční srážce může zůstat.",
+      "legal": "Jde o součet části postižitelného příjmu, která po provedení zákonné srážky zůstává dlužníkovi, a případných zadaných příjmů nepodléhajících srážkám. Není to totéž co samotná nezabavitelná částka – podle režimu vám může zůstat i jedna nebo dvě třetiny zbytku příjmu.",
+      "sourceLine": 1040,
+      "sha256": "4e21248031d4cda30f77a48db4dfe60a4a32d8f61090f33795c5cd917623a23c"
+    },
+    "protectedAmount": {
+      "plain": "To je část příjmu, kterou vám při srážce musí nechat. Podle vaší situace vám ale může zůstat i více.",
+      "legal": "Nezabavitelná částka je základní část příjmu, kterou při výpočtu srážky nelze dlužníkovi srazit. Vychází ze zákonného základu a z počtu započitatelných vyživovaných osob.",
+      "sourceLine": 1047,
+      "sha256": "fc5607bf86c12b88bd058819adbe3796f6f9965809735c63a279627047bfc138"
+    },
+    "deductionExecution": {
+      "plain": "Orientačně jde o maximální částku, která vám může být z příjmu kvůli exekuci sražena.",
+      "legal": "Jde o celkovou částku, kterou lze podle zadaného typu pohledávky a režimu exekuce z příjmu srazit. Případná paušální náhrada plátce se hradí z této částky, nikoli navíc.",
+      "sourceLine": 1069,
+      "sha256": "0c33071c61991447eb4c0f731847d6719aa78bf8fc6dded39208f7073e78a908"
+    },
+    "feeResult": {
+      "plain": "Tuto částku si ze sražených peněz ponechá zaměstnavatel nebo jiný plátce za zpracování srážky. Vám se nic dalšího nestrhává.",
+      "legal": "Paušální náhrada nákladů plátce se uspokojuje ze sražené částky před ostatními pohledávkami. Nezvyšuje celkovou zákonnou srážku.",
+      "sourceLine": 1075,
+      "sha256": "2da12f15b8437d73b3677b4c45bcc2ff0eadd4bb110f222c3947309124208154"
+    },
+    "debtAfterFee": {
+      "plain": "Tolik ze sražených peněz skutečně odejde na vaše dluhy.",
+      "legal": "Jde o část zákonné srážky, která po odečtení paušální náhrady plátci pokračuje k uspokojení vymáhaných pohledávek.",
+      "sourceLine": 1082,
+      "sha256": "57cd4ecc6ae12f5767edc582158b36753b0364ec8888d23b71e599d3c98540d5"
+    },
+    "thirdsBase": {
+      "plain": "Tato část příjmu se rozdělí na tři stejné části. Podle typu dluhu se pak určí, kolik vám zůstane a kolik se srazí.",
+      "legal": "Po odečtení nezabavitelné částky a oddělení části postižitelné bez omezení se zbývající část příjmu sníží na nejbližší nižší částku dělitelnou třemi. Tato část se následně rozdělí na třetiny; případný zbytek 1–2 Kč zůstává dlužníkovi.",
+      "sourceLine": 1111,
+      "sha256": "a507bcfc35ce30d397fc0c942553a5c47fd101393c1519a28989821a1cd0b7fc"
+    },
+    "oneThird": {
+      "plain": "Je to jedna ze tří stejných částí příjmu nad nezabavitelnou částkou. Podle typu dluhu a počtu exekucí se pak určí, kolik těchto třetin se srazí.",
+      "legal": "Jedna třetina je třetina zákonem určené části zbytku příjmu. První třetina se používá na pohledávky, třetí třetina zůstává dlužníkovi a použití druhé třetiny závisí na typu pohledávky nebo na režimu 4+ exekucí.",
+      "sourceLine": 1117,
+      "sha256": "95290bf9b2dc290975b7b9b65ec4a0c5345272f475747a1cf08cd11433f40b2e"
+    },
+    "deductionIndividual": {
+      "plain": "Z vašeho příjmu vám zůstane zákonem chráněná část a z další části se vypočítá splátka pro oddlužení. Tohle je částka, která každý měsíc odchází do oddlužení ještě před jejím dalším rozdělením.",
+      "legal": "Při oddlužení plněním splátkového kalendáře se z příjmů dlužníka standardně odvádí částka ve stejném rozsahu, v jakém mohou být při výkonu rozhodnutí nebo exekuci uspokojeny přednostní pohledávky. Prakticky se tedy vychází ze dvou třetin zbytku příjmu a případné části postižitelné bez omezení.",
+      "sourceLine": 1174,
+      "sha256": "cc59e44db5f72c80a0db82969f85b5356c3e61683b204051f8726ab3957602cb"
+    },
+    "feeIndividual": {
+      "plain": "V oddlužení je nutné kromě dluhů hradit také odměnu a hotové výdaje insolvenčního správce.",
+      "legal": "Z měsíční částky určené pro oddlužení se hradí odměna a náhrada hotových výdajů insolvenčního správce. Kalkulačka tuto položku odečítá před výpočtem částky dostupné nezajištěným věřitelům.",
+      "sourceLine": 1180,
+      "sha256": "81722319e17cb2b9cdc7f15b4c5228f44ca21f6f013c617c205698207b70975e"
+    },
+    "alimonyResultIndividual": {
+      "plain": "Alimenty mají přednost před běžnými dluhy. Pokud je platíte, nejdřív se z měsíčních peněz pro oddlužení uhradí výživné a až potom se dělí peníze mezi ostatní věřitele.",
+      "legal": "Běžné zákonné výživné se v oddlužení hradí před nezajištěnými věřiteli. Kalkulačka proto zadané výživné odečítá před výpočtem částky, která zbývá na běžné nezajištěné pohledávky.",
+      "sourceLine": 1187,
+      "sha256": "9ba86c0e3d37c6d4eb1e6e4638e8ba1717c7b01a54df5f8e6090811d3dc89dda"
+    },
+    "creditorsIndividual": {
+      "plain": "Orientačně tolik z vaší měsíční splátky zbývá na běžné dluhy, například půjčky, kreditní karty nebo nezaplacené faktury.",
+      "legal": "Jde o modelovou část měsíční srážky, která po odečtení zadaných prioritních položek, zejména odměny a hotových výdajů správce a běžného výživného, zbývá pro nezajištěné věřitele. Skutečný rozvrh může ovlivnit i další pohledávky a náklady řízení.",
+      "sourceLine": 1197,
+      "sha256": "c83aa23e1781853664608532b59298a4694c2fe3b9f0a115617005dae56c275b"
+    },
+    "retainedIndividual": {
+      "plain": "Orientačně tolik vám po zákonné srážce zůstane ještě před případným závazným příslibem.",
+      "legal": "Jde o částku, která dlužníkovi zůstává po provedení zákonné srážky, ještě před případným dobrovolným plněním ze závazného příslibu. Příslib není další zákonnou srážkou; jde o dobrovolné plnění z peněz, které by jinak dlužníkovi zůstaly.",
+      "sourceLine": 1204,
+      "sha256": "f5b0af88327ab405da9beef389b08793b242084df1835fd6814bd1b168725b28"
+    },
+    "satisfaction": {
+      "plain": "Ukazuje odhad, kolik procent běžných dluhů byste při zadaných údajích mohli během oddlužení zaplatit. Skutečný výsledek se může změnit.",
+      "legal": "Jde o orientační modelovou míru uspokojení zadaných nezajištěných pohledávek. Nejde o soudem stanovený cíl ani o záruku výsledku. Skutečné plnění ovlivní zejména výše zjištěných pohledávek, změny příjmů, další prioritní pohledávky a náklady řízení. V této verzi se do dlouhodobého procenta nezapočítává závazný příslib ani plnění třetí osoby; ty slouží ke kontrole minimálního plnění.",
+      "sourceLine": 1245,
+      "sha256": "9662b743e2c3e3601a1c5c25747ffeab17707ec2b24a3c1b0e13f4db9d42dbd3"
+    },
+    "deductionSpouses": {
+      "plain": "Srážka se vypočítá každému z manželů zvlášť. Tady vidíte jejich součet.",
+      "legal": "Srážka se vypočte samostatně z příjmu každého manžela podle pravidel oddlužení a následně se obě částky sečtou. Nejde o jednu srážku vypočtenou ze společného příjmu domácnosti.",
+      "sourceLine": 1299,
+      "sha256": "140c20b0779a4d75ebff723f9c3e9c6c7dee8b8e63a69b0f9d1e48eeee4b1eb6"
+    },
+    "separateSpouseDeduction": {
+      "plain": "Tady vidíte, kolik se srazí každému z manželů zvlášť.",
+      "legal": "U každého manžela se zákonná srážka stanoví samostatně z jeho vlastních příjmů a jeho započitatelných údajů.",
+      "sourceLine": 1305,
+      "sha256": "da3471c198a7cd434efdbd5ae86e55647ce916fc5ef553b2e43bfe881e50c0ba"
+    },
+    "feeSpouses": {
+      "plain": "V oddlužení je nutné kromě dluhů hradit také odměnu a hotové výdaje insolvenčního správce.",
+      "legal": "U společného oddlužení manželů se z měsíční částky hradí odměna a náhrada hotových výdajů insolvenčního správce v částce stanovené pro společné oddlužení. Kalkulačka ji odečítá před výpočtem částky pro nezajištěné věřitele.",
+      "sourceLine": 1311,
+      "sha256": "5601f9cd66dc0b3ec9a3548e0a3c07f5ba28c5d09a3f0bc2043c8b914314d63a"
+    },
+    "alimonyResultSpouses": {
+      "plain": "Pokud některý z manželů platí alimenty, ty se musí zaplatit dříve než půjčky a ostatní běžné dluhy.",
+      "legal": "Běžné zákonné výživné obou manželů se hradí před nezajištěnými věřiteli a snižuje částku dostupnou pro jejich běžné dluhy.",
+      "sourceLine": 1318,
+      "sha256": "e9df44ed5838387b6413e8fc960e73ef6ebaf61c40047ce771bf7717c0e883e8"
+    },
+    "creditorsSpouses": {
+      "plain": "Orientačně tolik ze společné měsíční splátky zbývá na běžné dluhy manželů.",
+      "legal": "Jde o modelovou část součtu měsíčních srážek obou manželů, která po odečtení zadaných prioritních položek zbývá pro nezajištěné věřitele. Skutečné plnění může ovlivnit i další pohledávky a náklady řízení.",
+      "sourceLine": 1328,
+      "sha256": "164817f55112617a077c2cce78231dc94d74902dd1fefa3a4c66449306dc7920"
+    },
+    "retainedSpouses": {
+      "plain": "Tohle jsou peníze, které manželům dohromady zůstanou po povinných srážkách. Pokud se zavážou platit ještě něco navíc ze svých peněz, níže se tato částka odečte.",
+      "legal": "Jde o součet částek, které oběma manželům zůstávají po zákonných srážkách, ještě před případným dobrovolným závazným příslibem.",
+      "sourceLine": 1335,
+      "sha256": "cbc9acb8d86f6e7363df5dda7856d9ced60ea83540680e5e99eda7602a7f9043"
+    }
+  }
+}

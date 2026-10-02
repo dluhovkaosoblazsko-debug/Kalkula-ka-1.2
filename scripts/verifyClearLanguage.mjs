@@ -65,7 +65,7 @@ if (process.argv.includes('--render')) {
     });
     test('Pomoc jiné osoby nezmizí a dlouhodobé omezení zůstává viditelné', () => {
       const d = done({ ...base(15000), povolitPlneniTretiOsoby1: true, pravidelnePlneniTretiOsoby1: 2000 });
-      const text = render(Results, d); assert(text.includes('third-party-summary')); assert(text.includes('2 000')); assert(text.includes('Odhad splacení níže nezahrnuje'));
+      const text = render(Results, d); assert(text.includes('third-party-summary')); assert(text.includes('2 000')); assert(text.includes('Do odhadu, kolik celkem zaplatíte věřitelům, je zatím nezapočítává.'));
       assert(text.includes('Samotné pokrytí minima neznamená schválení oddlužení.'));
     });
     test('Neznámý dluh je vysvětlen bez fiktivního procenta v UI, reportu i sdílení', () => {
@@ -85,7 +85,7 @@ if (process.argv.includes('--render')) {
     });
     test('Placené a přijaté výživné je srozumitelně rozlišeno', () => {
       const text = render(Fields, base(), 'jednotlivec', { step: 'other' });
-      assert(text.includes('Platíte někomu pravidelně výživné?')); assert(text.includes('Výživné, které dostáváte, uvedete zvlášť.')); assert(text.includes('Právně přesně'));
+      assert(text.includes('Platíte někomu pravidelně výživné?')); assert(text.includes('Uveďte měsíční výživné, které platíte na děti, které nemáte ve své péči.')); assert(text.includes('výživné na dítě. Důchod, nemocenská')); assert(text.includes('Právně přesně'));
     });
     test('Shrnutí neukazuje interní klíč typu pohledávky', () => {
       const text = render(InputSummary, base(), 'nezabavitelna', { step: 'execution' }); assert(text.includes('nepřednostní dluh')); assert(!text.includes('neprednostni'));
