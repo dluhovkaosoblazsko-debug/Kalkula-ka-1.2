@@ -64,9 +64,13 @@ async def main():
                     await own.fill(str(need))
                     assert await other.locator(f'input[name="{third_key}"]').input_value() == str(need - 1000)
                     assert 'Minimum je už pokryté bez této pomoci.' in await other.inner_text()
-                    await other.get_by_role('checkbox').uncheck()
+                    # This checkbox is deliberately removed after the click. Verify the
+                    # disappearance and stored value instead of waiting for an unchecked DOM node.
+                    assert await other.get_by_role('checkbox').is_checked()
+                    await other.get_by_role('checkbox').click()
                     assert await form.get_by_test_id('third-party-funding').count() == 0
                     stored = await pg.evaluate("JSON.parse(window.__values.insCalcData2026_v10)")
+                    assert stored['povolitPlneniTretiOsoby' + suffix] is False
                     assert stored[third_key] == ''
                     assert stored[own_key] == need
 
