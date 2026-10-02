@@ -22,14 +22,17 @@ export function NumberField({ field, label, value, onChange, integer = false, ma
     {error && <p id={`${id}-error`} role="alert" className="text-sm font-bold text-red-700">{error}</p>}
   </div>;
 }
-export function Choice({ checked, onChange, children, hint, controls, helpKey, helpId }) {
+export function Choice({ checked, onChange, children, hint, controls, helpKey, helpId, isQuestion = false }) {
   const id = useId();
   const description = helpId || `${id}-help`;
+  const answerHintId = `${id}-answer-hint`;
   return <div><label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
     <input type="checkbox" checked={Boolean(checked)} onChange={e => onChange(e.target.checked)}
-      aria-describedby={helpKey ? description : undefined} aria-controls={controls} aria-expanded={controls ? Boolean(checked) : undefined} className="mt-1 h-5 w-5 shrink-0 accent-blue-600" />
+      aria-describedby={[isQuestion ? answerHintId : '', helpKey ? description : ''].filter(Boolean).join(' ') || undefined} aria-controls={controls} aria-expanded={controls ? Boolean(checked) : undefined} className="mt-1 h-5 w-5 shrink-0 accent-blue-600" />
     <span className="text-sm font-bold text-slate-800">{children}{!helpKey && hint && <span className="mt-1 block text-xs font-normal leading-relaxed text-slate-500">{hint}</span>}</span>
-  </label>{helpKey && <ApprovedHelp name={helpKey} id={description} />}</div>;
+  </label>
+    {isQuestion && <p id={answerHintId} data-checkbox-answer-hint className="mt-1.5 text-xs leading-relaxed text-slate-600">Pokud je vaše odpověď ANO, políčko zaškrtněte. Pokud je odpověď NE, nechte ho prázdné.</p>}
+    {helpKey && <ApprovedHelp name={helpKey} id={description} />}</div>;
 }
 function SelectField({ field, label, value, onChange, options, helpKey }) {
   const id = useId();
@@ -42,7 +45,7 @@ function OptionalNumber({ data, setData, field, question, label, hint, legal, er
   const id = useId();
   const open = optionalOpen(data,field);
   return <div className="space-y-3">
-    <Choice helpKey={helpKey} helpId={`${id}-help`} checked={open} controls={id} onChange={checked => setData(prev => toggleOptional(prev,field,checked))} hint={hint}>{question}</Choice>
+    <Choice isQuestion helpKey={helpKey} helpId={`${id}-help`} checked={open} controls={id} onChange={checked => setData(prev => toggleOptional(prev,field,checked))} hint={hint}>{question}</Choice>
     <div id={id} hidden={!open}>{open && <NumberField describedBy={helpKey ? `${id}-help` : undefined} field={field} label={label} integer={integer} max={max}
       value={data[field]} error={errors.find(e => e.field === field)?.message}
       onChange={value => setData(prev => ({ ...prev, [field]: value }))} />}</div>
@@ -74,7 +77,7 @@ function IncomeFields({ data, setData, person, errors }) {
     </div>)}
     <button type="button" className="w-full rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm font-bold text-blue-700"
       onClick={() => setData(prev => setIncomeSources(prev,person,[...prev[key],{id:uniqueId(),typ:'mzda',castka:'',pridelenaNezabavitelna:''}]))}>Přidat další příjem</button>
-    {sources.length > 1 && <Choice checked={multiple} onChange={checked => setData(prev => ({...prev,[`vicePlatcu${person}`]:checked}))}
+    {sources.length > 1 && <Choice isQuestion checked={multiple} onChange={checked => setData(prev => ({...prev,[`vicePlatcu${person}`]:checked}))}
       hint="Například mzdu od zaměstnavatele a důchod od ČSSZ. Když dva příjmy vyplácí stejný zaměstnavatel nebo instituce, vyberte u nich stejného plátce.">Dostáváte příjmy od více zaměstnavatelů nebo institucí?</Choice>}
     {multiple && groups.length > 1 && <div className="space-y-3 rounded-xl border border-amber-200 bg-amber-50 p-3">
       <p className="text-xs leading-relaxed text-amber-900">Uveďte podle rozhodnutí nebo pokynu, kolik má každý plátce ponechat bez srážky. Nevíte částku? Nechte pole prázdné. Bez úplného rozdělení bude výsledek jen souhrnným odhadem; nulu vyplňte pouze tehdy, byla-li skutečně určena.</p>
@@ -153,7 +156,7 @@ function MinimumFields({ data, setData, mode, results, errors }) {
       <p className="text-sm font-bold text-slate-800">{remaining > 0
         ? `Po započtení vašich peněz je potřeba zajistit ještě ${formatKc(remaining)} měsíčně.`
         : 'Minimum je už pokryté bez této pomoci. Dříve zadaný příspěvek zůstává dostupný ke kontrole a úpravě.'}</p>
-      <Choice helpKey="thirdParty" checked={thirdEnabled} onChange={checked => toggle('povolitPlneniTretiOsoby'+suffix,thirdKey,checked)}
+      <Choice isQuestion={remaining > 0} helpKey="thirdParty" checked={thirdEnabled} onChange={checked => toggle('povolitPlneniTretiOsoby'+suffix,thirdKey,checked)}
         hint="Například rodič, partner nebo jiná osoba, která se zaváže pravidelně přispívat.">{remaining > 0
           ? 'Bude vám tuto částku nebo její část pravidelně poskytovat někdo jiný?'
           : 'Chci dál počítat s dříve zadanou pomocí jiné osoby'}</Choice>
