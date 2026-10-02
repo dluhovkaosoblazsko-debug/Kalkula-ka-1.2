@@ -3,6 +3,7 @@ import {
   INCOME_TYPES, OPTIONAL_FIELDS, present, number, readNumber, optionalOpen, toggleOptional,
   setIncomeSources, confirmNoIncome, feeEligible, formatKc, incomeReady, MODEL_NOTE,
 } from './caseState.js';
+import FamilyTransfer, { ENFORCED_ALIMONY_NOTE, LEGAL_PARTNER_NOTE } from './FamilyControls';
 import ApprovedHelp, { optionalHelpKey } from './ApprovedHelp';
 import { groupPayers, moveIncomeToPayer, removeIncomeSource } from './calculateCase.js';
 
@@ -195,16 +196,19 @@ export default function CaseFields({ step, mode, data, setData, results, errors 
   if (step.startsWith('income')) return <IncomeFields data={data} setData={setData} person={step === 'incomeB' ? 2 : 1} errors={errors} />;
   if (step === 'minimum') return <MinimumFields data={data} setData={setData} mode={mode} results={results} errors={errors} />;
   if (step === 'family') return <div className="space-y-4">
+    <FamilyTransfer key={mode} />
     <p className="text-sm text-slate-600">Uveďte, koho vyživujete. Tyto údaje pomáhají určit část příjmu, která se nesráží. Zaškrtněte jen to, co se vás týká.</p>
     {mode === 'manzele' && field({field:'spolecneDeti',question:'Máte společně vyživované děti?',label:'Počet společných dětí',integer:true,hint:'Společné děti napište jen sem. K dalším osobám jednotlivých manželů je už nepřidávejte.'})}
     {people.map(p => { const letter = p === 1 ? 'A' : 'B'; const suffix = mode === 'manzele' ? ` – manžel ${letter}` : '';
       const r = mode === 'manzele' ? results[`insM_${letter}`] : mode === 'nezabavitelna' ? results.ex : results.insJ;
       return <div key={p} className="space-y-4">
         {field({field:`vyzivovaneOsoby${p}`,question:mode === 'manzele' ? `Vyživuje manžel ${letter} ještě další osoby?` : 'Vyživujete děti nebo jiné osoby?',label:`Počet vyživovaných osob${suffix}`,integer:true,hint:mode === 'manzele' ? 'Například děti z předchozího vztahu. Společné děti nepočítejte znovu.' : 'Manžela nebo partnera sem nepočítejte; posuzuje se zvlášť.'})}
+        <p data-testid="enforced-alimony-guidance" className="text-xs leading-relaxed text-slate-600">{ENFORCED_ALIMONY_NOTE}</p>
         {field({field:`osobySVykonemProVyzivne${p}`,question:mode === 'manzele' ? `Vymáhá někdo po manželovi ${letter} dlužné výživné přes soud nebo exekutora?` : 'Vymáhá po vás někdo dlužné výživné přes soud nebo exekutora?',label:`Počet osob s vymáhaným výživným${suffix}`,integer:true,max:r.pocetVsechOsob,hint:'Tady uveďte počet osob, na které se výživné právě vymáhá. Pravidelnou měsíční platbu výživného zadáte zvlášť.',legal:'Na osobu, v jejíž prospěch trvá nařízený výkon rozhodnutí nebo exekuce pro výživné, se jedna čtvrtina nezabavitelné částky nezapočítává.'})}
       </div>; })}
     {mode !== 'manzele' && <Choice helpKey={results.duchodPovinny1 ? "partnerOwnPension" : "partnerPension"} checked={data.partnerProNezabavitelnou1} onChange={v=>set('partnerProNezabavitelnou1',v)}
       hint="Jde o starobní důchod, invalidní důchod II. nebo III. stupně nebo sirotčí důchod. Manžela či partnera nepřidávejte znovu mezi osoby výše.">{results.duchodPovinny1 ? 'Mám manžela/manželku nebo partnera/partnerku' : 'Manžel nebo partner pobírá některý z uvedených důchodů'}</Choice>}
+    {mode !== 'manzele' && <p data-testid="legal-partner-guidance" className="text-xs leading-relaxed text-slate-600">{LEGAL_PARTNER_NOTE}</p>}
     {mode === 'manzele' && (results.insM_A.partnerZapocitan || results.insM_B.partnerZapocitan) && <p className="text-sm text-blue-800">Kalkulačka už zohlednila zadaný důchod při započtení manžela nebo partnera. Mezi další osoby jej znovu nepřidávejte.</p>}
   </div>;
   if (step === 'other') return <div className="space-y-4">{people.map(p => <div key={p} className="space-y-4">

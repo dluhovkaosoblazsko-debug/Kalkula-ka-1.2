@@ -34,6 +34,7 @@ jobs:
           node scripts/verifyClearLanguage.mjs --render | tee test-results/clear-language.log
           node scripts/verifyMinimumFunding.mjs | tee test-results/minimum-funding.log
           node scripts/verifyApprovedHelp.mjs --history | tee test-results/approved-help.log
+          node scripts/verifyFamilyIsolation.mjs --render | tee test-results/family-isolation.log
       - name: Production build
         run: npm run build
       - name: Record tested revision
@@ -62,6 +63,7 @@ jobs:
           /tmp/calculator-browser-tests/bin/python scripts/verifyBrowserRepairs.py . test-results/browser | tee test-results/browser.log
           /tmp/calculator-browser-tests/bin/python scripts/verifyMinimumFunding.py . test-results/minimum-browser | tee test-results/minimum-browser.log
           /tmp/calculator-browser-tests/bin/python scripts/verifyApprovedHelp.py . test-results/help-browser | tee test-results/help-browser.log
+          /tmp/calculator-browser-tests/bin/python scripts/verifyFamilyIsolation.py . test-results/family-browser | tee test-results/family-browser.log
       - name: Save build and test evidence
         if: always()
         uses: actions/upload-artifact@v7

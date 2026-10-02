@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Calculator, User, Users, ShieldAlert, Settings, Printer, RotateCcw } from 'lucide-react';
 import { DEFAULT_2026_PARAMS, PENSION_EXCEPTION_LIMIT_2026 } from '../lib/calculations2026.js';
 import { createDefaultData, migrateData, caseStatus, PARAM_LABELS, readStored, writeStored } from './caseState.js';
@@ -8,10 +8,13 @@ import { NumberField } from './CaseFields';
 import CaseResults from './CaseResults';
 import PrintableCalculationReport from './PrintableCalculationReport';
 
+import { restoreFamilyWorkspace, activeFamilyData, serializeFamilyWorkspace, updateFamilyCase, switchFamilyMode, legacyReviewPending, assignLegacyFamily, applyFamilyCopy } from './familyState.js';
+import { FamilyWorkspaceContext, legacyFamilyQuestion } from './FamilyControls';
+
 const DATA_KEY = 'insCalcData2026_v10';
 const PARAMS_KEY = 'insCalcParams2026_v10';
 function loadInitialState() {
-  let data = createDefaultData(), params = { ...DEFAULT_2026_PARAMS }, error = null;
+  let data = createDefaultData(), params = { ...DEFAULT_2026_PARAMS }, error = null, workspace;
   try {
     const storedData = readStored(window.localStorage,DATA_KEY,null);
     const storedParams = readStored(window.localStorage,PARAMS_KEY,null);
@@ -21,16 +24,27 @@ function loadInitialState() {
       if (typeof storedParams.value !== 'object' || Array.isArray(storedParams.value)) throw new Error('Poškozené parametry');
       params = { ...params, ...storedParams.value };
     }
+    workspace = restoreFamilyWorkspace(data);
   } catch {
     error = 'Uložené údaje nelze bezpečně načíst. Původní uložená kopie nebyla přepsána; aplikace pracuje s novým zadáním.';
   }
-  return {data,params,error};
+  return {workspace: workspace || restoreFamilyWorkspace(createDefaultData()),params,error};
 }
 export default function HlavniKalkulackaPage() {
   const [initial] = useState(loadInitialState);
-  const [data,setData] = useState(initial.data);
+  const [workspace,setWorkspace] = useState(initial.workspace);
+  const data = useMemo(() => activeFamilyData(workspace), [workspace]);
+  const mode = workspace.mode;
+  const setData = useCallback(update => setWorkspace(previous => updateFamilyCase(previous, update)), []);
+  const setMode = nextMode => {
+    if (legacyReviewPending(workspace)) {
+      if (!window.confirm(legacyFamilyQuestion(workspace, nextMode))) return false;
+      setWorkspace(previous => legacyReviewPending(previous) ? assignLegacyFamily(previous, nextMode) : switchFamilyMode(previous, nextMode));
+    } else setWorkspace(previous => switchFamilyMode(previous, nextMode));
+    return true;
+  };
+  const familyContext = { workspace, onCopy: (source, common) => setWorkspace(previous => applyFamilyCopy(previous, source, common)) };
   const [params,setParams] = useState(initial.params);
-  const [mode,setMode] = useState('jednotlivec');
   const [started,setStarted] = useState(false);
   const [settingsOpen,setSettingsOpen] = useState(false);
   const [resetVersion,setResetVersion] = useState(0);
@@ -43,25 +57,25 @@ export default function HlavniKalkulackaPage() {
     if (!saveAllowed) return;
     let saved = false;
     try {
-      const dataSaved = writeStored(window.localStorage,DATA_KEY,data);
+      const dataSaved = writeStored(window.localStorage,DATA_KEY,serializeFamilyWorkspace(workspace));
       const paramsSaved = writeStored(window.localStorage,PARAMS_KEY,params);
       saved = dataSaved && paramsSaved;
     } catch { saved = false; }
     setStorageMessage(saved
       ? 'Údaje se průběžně ukládají pouze v tomto prohlížeči. Na sdíleném zařízení je po práci vymažte.'
       : 'Údaje se nepodařilo uložit. Výpočet funguje v paměti; po obnovení mohou poslední změny zmizet nebo se načíst starší údaje.');
-  },[data,params,saveAllowed]);
+  },[workspace,params,saveAllowed]);
   const reset = () => {
     if (!window.confirm('Začít nový výpočet a vymazat jeho zadané údaje? Odborné parametry zůstanou zachované.')) return false;
     let removed = false;
     try {window.localStorage.removeItem(DATA_KEY);removed = true;} catch { /* The warning below is visible even when storage is disabled. */ }
-    setData(createDefaultData());setMode('jednotlivec');setStarted(false);setSettingsOpen(false);setActionError('');setResetVersion(v=>v+1);
+    setWorkspace(restoreFamilyWorkspace(createDefaultData()));setStarted(false);setSettingsOpen(false);setActionError('');setResetVersion(v=>v+1);
     setSaveAllowed(removed);
     setStorageMessage(removed ? 'Údaje výpočtu byly vymazány.' : 'Údaje v paměti byly vymazány, uloženou kopii se ale smazat nepodařilo. Po obnovení se mohou starší údaje vrátit.');
     return true;
   };
   const print = () => {
-    if (!caseStatus(data,mode,results,params).canExport) {setActionError('Před tiskem opravte a potvrďte zadání.');return;}
+    if (legacyReviewPending(workspace) || !caseStatus(data,mode,results,params).canExport) {setActionError('Před tiskem opravte a potvrďte zadání.');return;}
     setActionError('');window.print();
   };
   const modes = [
@@ -69,7 +83,7 @@ export default function HlavniKalkulackaPage() {
     {key:'manzele',title:'Společné oddlužení manželů',description:'Kolik se bude srážet každému z vás a kolik vám dohromady zůstane.',icon:Users},
     {key:'nezabavitelna',title:'Exekuční srážka',description:'Kolik vám mohou měsíčně srazit a kolik vám po srážce zůstane.',icon:ShieldAlert},
   ];
-  return <div className="calculator-page min-h-screen p-4 md:p-6 font-sans text-slate-800 print:p-0">
+  return <FamilyWorkspaceContext.Provider value={familyContext}><div className="calculator-page min-h-screen p-4 md:p-6 font-sans text-slate-800 print:p-0">
     <PrintableCalculationReport mode={mode} data={data} results={results} params={params} />
     <div className="mobile-calculator"><MobileForm key={resetVersion} data={data} setData={setData} mode={mode} setMode={setMode}
       results={results} params={params} onReset={reset} onPrint={print} storageMessage={storageMessage} /></div>
@@ -91,10 +105,10 @@ export default function HlavniKalkulackaPage() {
         <div className="grid gap-4 md:grid-cols-2">{Object.entries(PARAM_LABELS).map(([key,label])=><NumberField helpKey={key === "koeficientZahladu" ? "baseCoefficient" : key === "koeficientZabavitelnosti" ? "fullCoefficient" : undefined} key={key} field={key} label={label} money={!key.startsWith('koeficient')} value={params[key]} onChange={value=>setParams(prev=>({...prev,[key]:value}))} error={status.errors.find(e=>e.field===key)?.message}/>)}</div>
         <p className="text-sm text-slate-700">Zákonný limit jedné třetiny pro důchodovou výjimku 4+: <strong>{PENSION_EXCEPTION_LIMIT_2026.toLocaleString('cs-CZ')} Kč včetně DPH</strong> (není parametrem odměny konkrétního správce).</p>
         <button type="button" className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm font-bold text-blue-700" onClick={()=>setParams({...DEFAULT_2026_PARAMS})}>Obnovit výchozí parametry 2026</button>
-      </section> : !started ? <section className="rounded-2xl border border-slate-200 bg-white p-6"><h2 className="text-2xl font-black text-slate-900">Co chcete spočítat?</h2><p className="mt-2 text-sm text-slate-600">Vyberte svou situaci. Provedeme vás několika otázkami, krok za krokem.</p><div className="mt-5 grid gap-4 lg:grid-cols-3">{modes.map(({key,title,description,icon:Icon})=><button type="button" key={key} onClick={()=>{setMode(key);setStarted(true);}} className={`rounded-xl border p-5 text-left focus:outline-none focus:ring-2 focus:ring-blue-400 ${key==='nezabavitelna'?'border-rose-200 bg-rose-50':key==='manzele'?'border-indigo-200 bg-indigo-50':'border-blue-200 bg-blue-50'}`}><Icon size={24} className="mb-3 text-blue-700"/><strong className="block text-base text-slate-900">{title}</strong><span className="mt-2 block text-sm text-slate-600">{description}</span></button>)}</div></section> : <>
+      </section> : !started ? <section className="rounded-2xl border border-slate-200 bg-white p-6"><h2 className="text-2xl font-black text-slate-900">Co chcete spočítat?</h2><p className="mt-2 text-sm text-slate-600">Vyberte svou situaci. Provedeme vás několika otázkami, krok za krokem.</p><div className="mt-5 grid gap-4 lg:grid-cols-3">{modes.map(({key,title,description,icon:Icon})=><button type="button" key={key} onClick={()=>{if(setMode(key)!==false) setStarted(true);}} className={`rounded-xl border p-5 text-left focus:outline-none focus:ring-2 focus:ring-blue-400 ${key==='nezabavitelna'?'border-rose-200 bg-rose-50':key==='manzele'?'border-indigo-200 bg-indigo-50':'border-blue-200 bg-blue-50'}`}><Icon size={24} className="mb-3 text-blue-700"/><strong className="block text-base text-slate-900">{title}</strong><span className="mt-2 block text-sm text-slate-600">{description}</span></button>)}</div></section> : <>
         <nav className="mb-5 flex flex-wrap gap-2 rounded-xl bg-slate-200 p-1" aria-label="Typ výpočtu">{modes.map(({key,title})=><button type="button" key={key} aria-pressed={mode===key} onClick={()=>setMode(key)} className={`flex-1 rounded-lg px-3 py-3 text-sm font-bold ${mode===key?'bg-white text-blue-700':'text-slate-600'}`}>{title}</button>)}</nav>
         <div className="grid gap-6 lg:grid-cols-12"><aside className="lg:col-span-5"><DesktopForm key={mode+'-'+resetVersion} data={data} setData={setData} mode={mode} results={results} params={params}/></aside><section className="lg:col-span-7"><CaseResults data={data} mode={mode} results={results} params={params}/></section></div>
       </>}
     </div>
-  </div>;
+  </div></FamilyWorkspaceContext.Provider>;
 }
