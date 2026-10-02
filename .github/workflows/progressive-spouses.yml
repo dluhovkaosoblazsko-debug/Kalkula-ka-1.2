@@ -17,6 +17,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+          fetch-depth: 0
       - uses: actions/setup-node@v7
         with:
           node-version: '22'
@@ -32,6 +33,7 @@ jobs:
           node scripts/verifyAuditRepairs.mjs --render | tee test-results/audit.log
           node scripts/verifyClearLanguage.mjs --render | tee test-results/clear-language.log
           node scripts/verifyMinimumFunding.mjs | tee test-results/minimum-funding.log
+          node scripts/verifyApprovedHelp.mjs --history | tee test-results/approved-help.log
       - name: Production build
         run: npm run build
       - name: Record tested revision
@@ -59,6 +61,7 @@ jobs:
           set -o pipefail
           /tmp/calculator-browser-tests/bin/python scripts/verifyBrowserRepairs.py . test-results/browser | tee test-results/browser.log
           /tmp/calculator-browser-tests/bin/python scripts/verifyMinimumFunding.py . test-results/minimum-browser | tee test-results/minimum-browser.log
+          /tmp/calculator-browser-tests/bin/python scripts/verifyApprovedHelp.py . test-results/help-browser | tee test-results/help-browser.log
       - name: Save build and test evidence
         if: always()
         uses: actions/upload-artifact@v7
