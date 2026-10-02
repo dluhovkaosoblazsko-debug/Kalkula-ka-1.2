@@ -10,6 +10,7 @@ from playwright.async_api import async_playwright
 from verifyBrowserRepairs import HTML, OUT, ROOT, TITLES, norm, seed, shim
 
 CATALOG = json.loads((ROOT / 'src/kalkulacka/approvedHelp.json').read_text())['entries']
+INSTRUCTION = 'Pokud je vaše odpověď ANO, políčko zaškrtněte. Pokud je odpověď NE, nechte ho prázdné.'
 
 async def main():
     results = []
@@ -44,7 +45,17 @@ async def main():
                     checkbox = family.get_by_role('checkbox', name='Vyživuje manžel A ještě další osoby?' if mode == 'manzele' else 'Vyživujete děti nebo jiné osoby?', exact=True)
                     assert not await checkbox.is_checked()
                     assert await help_block.locator('xpath=ancestor::label').count() == 0
+                    instruction = help_block.locator('xpath=preceding-sibling::p[@data-checkbox-answer-hint]')
+                    assert await instruction.is_visible()
+                    assert await instruction.inner_text() == INSTRUCTION
+                    hint_id = await instruction.get_attribute('id')
+                    description_ids = (await checkbox.get_attribute('aria-describedby')).split()
+                    assert hint_id in description_ids
+                    assert await help_block.get_attribute('id') in description_ids
                     before = await page.evaluate('JSON.stringify(window.__values)')
+                    await instruction.click()
+                    assert not await checkbox.is_checked()
+                    assert await page.evaluate('JSON.stringify(window.__values)') == before
                     await help_block.locator('summary').click()
                     assert await help_block.locator('[data-help-layer="legal"]').is_visible()
                     assert not await checkbox.is_checked()
@@ -53,6 +64,7 @@ async def main():
                     await checkbox.focus()
                     await page.keyboard.press('Space')
                     assert await checkbox.is_checked()
+                    assert await instruction.inner_text() == INSTRUCTION
                     field = family.locator('input[name="vyzivovaneOsoby1"]')
                     assert await field.is_visible()
                     await field.fill('1')
