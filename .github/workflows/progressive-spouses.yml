@@ -31,6 +31,7 @@ jobs:
           node scripts/verifyNumericalModel.mjs | tee test-results/numerical.log
           node scripts/verifyAuditRepairs.mjs --render | tee test-results/audit.log
           node scripts/verifyClearLanguage.mjs --render | tee test-results/clear-language.log
+          node scripts/verifyMinimumFunding.mjs | tee test-results/minimum-funding.log
       - name: Production build
         run: npm run build
       - name: Record tested revision
@@ -57,6 +58,7 @@ jobs:
         run: |
           set -o pipefail
           /tmp/calculator-browser-tests/bin/python scripts/verifyBrowserRepairs.py . test-results/browser | tee test-results/browser.log
+          /tmp/calculator-browser-tests/bin/python scripts/verifyMinimumFunding.py . test-results/minimum-browser | tee test-results/minimum-browser.log
       - name: Save build and test evidence
         if: always()
         uses: actions/upload-artifact@v7
