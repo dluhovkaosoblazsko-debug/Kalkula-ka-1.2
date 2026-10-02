@@ -1,0 +1,59 @@
+name: Clear language integration
+on:
+  push:
+    branches: [ui-clear-language]
+permissions:
+  contents: read
+concurrency:
+  group: clear-language-integration
+  cancel-in-progress: false
+jobs:
+  integrate:
+    if: github.repository == 'dluhovkaosoblazsko-debug/Kalkula-ka-1.2' && github.ref == 'refs/heads/ui-clear-language'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Apply version-guarded text changes
+        run: node scripts/applyClearLanguage.mjs
+      - name: Install build and test dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Verify unchanged calculations and readable output
+        run: |
+          mkdir -p test-results
+          set -o pipefail
+          npm run verify | tee test-results/reference.log
+          node scripts/verifyNumericalModel.mjs | tee test-results/numerical.log
+          node scripts/verifyAuditRepairs.mjs --render | tee test-results/audit.log
+          node scripts/verifyClearLanguage.mjs --render | tee test-results/clear-language.log
+          npm run build
+      - name: Commit verified text changes only to feature branch
+        run: |
+          git diff --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/kalkulacka/CaseFields.jsx src/kalkulacka/WorkflowForms.jsx src/kalkulacka/HlavniKalkulackaPage.jsx scripts/verifyBrowserRepairs.py scripts/verifyAuditRepairs.mjs
+          git commit -m 'Zapojit overene srozumitelne texty bez zmen vypoctu'
+          git push origin HEAD:ui-clear-language
+          git rev-parse HEAD > dist/build-commit.txt
+      - name: Save tested app for visual review
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: clear-language-review
+          retention-days: 7
+          path: |
+            dist/
+            src/
+            scripts/
+            test-results/
+            package.json
+            package-lock.json
+            vite.config.js
+            index.html
