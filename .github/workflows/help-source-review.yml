@@ -1,0 +1,29 @@
+name: Podklady schvalenych vysvetlivek
+on:
+  push:
+    branches: [restore-approved-help]
+    paths: [.github/workflows/help-source-review.yml]
+permissions:
+  contents: read
+jobs:
+  source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Export exact historical text and current source
+        run: |
+          mkdir -p help-review/original help-review/current
+          git show 1ad8344381a6373ec2017d90b8b0dc3b901354a7:src/kalkulacka/HlavniKalkulackaPage.jsx > help-review/original/approved-two-layers.jsx
+          git show 6e95c5ecc03dedbee10b71fb6b050402c2272f61:src/kalkulacka/HlavniKalkulackaPage.jsx > help-review/original/approved-plain.jsx
+          git show 6389e673cb03fa3cd59fbf16d10420696fcc01b3:src/kalkulacka/HlavniKalkulackaPage.jsx > help-review/original/handover.jsx
+          git archive 685d2400a97a4cb85b246f9f8d1cf6a129f675c9 | tar -x -C help-review/current
+          sha256sum help-review/original/* > help-review/source-sha256.txt
+      - uses: actions/upload-artifact@v7
+        with:
+          name: exact-help-sources
+          path: help-review/
+          retention-days: 7
