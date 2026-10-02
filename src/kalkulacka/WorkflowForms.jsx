@@ -1,7 +1,8 @@
 import React, { useEffect, useId, useRef, useState } from 'react';
 import CaseFields from './CaseFields';
 import CaseResults, { InputSummary } from './CaseResults';
-import { caseStatus, confirmSection, sectionReviewed, sectionTitle, sectionHasData } from './caseState.js';
+import { caseStatus, confirmSection, sectionReviewed, sectionHasData } from './caseState.js';
+import { sectionTitle } from './uiCopy.js';
 import { buildCalculationShareText } from './PrintableCalculationReport';
 
 const buttonClass = 'min-h-12 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-bold text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400';
@@ -19,14 +20,14 @@ export function DesktopForm({data,setData,mode,results,params}) {
       const errors = status.errors.filter(e=>e.section===step);
       return <section key={step} className="rounded-xl border border-slate-200 bg-white p-4" data-step={step}>
         <h3 className="mb-2 text-base font-black text-slate-900">{index+1}. {sectionTitle(step)}</h3>
-        {reviewed && <p className="mb-2 text-xs font-bold text-green-700">Zkontrolováno. Změna údaje vyžaduje nové potvrzení.</p>}
+        {reviewed && <p className="mb-2 text-xs font-bold text-green-700">Vyplněno. Údaje můžete znovu otevřít a upravit.</p>}
         {unlocked ? <details open={!reviewed}>
           <summary className="cursor-pointer text-sm text-slate-600"><InputSummary data={data} mode={mode} step={step} /></summary>
           <div className="mt-4 space-y-4"><CaseFields step={step} mode={mode} data={data} setData={setData} results={results} errors={errors} />
-            {attempted === step && errors.length > 0 && <p role="alert" className="text-sm font-bold text-red-700">Nejprve opravte údaje tohoto oddílu.</p>}
-            <button type="button" className={buttonClass} onClick={()=>{setAttempted(step); if (!errors.length) setData(prev=>confirmSection(prev,mode,step,params));}}>Potvrdit {sectionTitle(step).toLocaleLowerCase('cs-CZ')}{index < status.flow.length-1 ? ' a pokračovat' : ''}</button>
+            {attempted === step && errors.length > 0 && <p role="alert" className="text-sm font-bold text-red-700">Ještě opravte označené údaje v této části.</p>}
+            <button type="button" data-action="confirm-section" className={buttonClass} onClick={()=>{setAttempted(step); if (!errors.length) setData(prev=>confirmSection(prev,mode,step,params));}}>{index < status.flow.length-1 ? 'Pokračovat' : 'Zobrazit výsledek'}</button>
           </div>
-        </details> : <div className="space-y-2 text-sm text-slate-600"><p>Otevře se po potvrzení předchozích oddílů. Dříve zadané hodnoty zůstávají zachované.</p><p><InputSummary data={data} mode={mode} step={step} /></p><button type="button" className="min-h-10 font-bold text-blue-700" onClick={()=>setExpanded(prev=>({...prev,[mode+step]:true}))}>Otevřít pro kontrolu</button></div>}
+        </details> : <div className="space-y-2 text-sm text-slate-600"><p>Tady už máte zadané údaje. Můžete je zkontrolovat hned, nebo pokračovat od předchozího kroku.</p><p><InputSummary data={data} mode={mode} step={step} /></p><button type="button" className="min-h-10 font-bold text-blue-700" onClick={()=>setExpanded(prev=>({...prev,[mode+step]:true}))}>Zkontrolovat údaje</button></div>}
       </section>;
     })}
   </div>;
@@ -50,14 +51,14 @@ export function MobileForm({data,setData,mode,setMode,results,params,onReset,onP
     setData(nextData);
     if (editing) {
       const pending = nextStatus.errors[0]?.section || nextStatus.flow.find(s=>!sectionReviewed(nextData,mode,s,params));
-      if (pending && pending !== 'settings') {setMessage('Změna vyžaduje kontrolu navazujícího oddílu.');setStep(pending);} else {setEditing(false);go('result');}
+      if (pending && pending !== 'settings') {setMessage(`Po této změně ještě zkontrolujte část „${sectionTitle(pending)}“. Ostatní údaje zůstaly zachované.`);setStep(pending);} else {setEditing(false);go('result');}
       return;
     }
     const index = nextStatus.flow.indexOf(step);
     if (index < nextStatus.flow.length-1) go(nextStatus.flow[index+1]);
     else {
       const invalid = nextStatus.errors[0]?.section || nextStatus.flow.find(s=>!sectionReviewed(nextData,mode,s,params));
-      if (invalid && invalid !== 'settings') {setMessage('Před dokončením opravte uvedené údaje.');setStep(invalid);}
+      if (invalid && invalid !== 'settings') {setMessage(`Ještě zkontrolujte část „${sectionTitle(invalid)}“.`);setStep(invalid);}
       else go('result');
     }
   };
@@ -93,7 +94,7 @@ export function MobileForm({data,setData,mode,setMode,results,params,onReset,onP
     </> : <section aria-labelledby={id} className="rounded-xl border border-slate-200 bg-white p-4"><CaseFields step={step} mode={mode} data={data} setData={setData} results={results} errors={status.errors.filter(e=>e.section===step)} /></section>}
     <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white p-3" style={{paddingBottom:'max(0.75rem, env(safe-area-inset-bottom))'}}>
       <div className="mx-auto flex max-w-xl gap-3"><button type="button" className={buttonClass+' flex-1'} onClick={back}>{editing ? 'Zpět na výsledek' : 'Zpět'}</button>
-        {step !== 'result' && <button type="button" className={buttonClass+' flex-[1.5]'} onClick={confirm}>{editing ? 'Potvrdit a zpět na výsledek' : 'Potvrdit a pokračovat'}</button>}
+        {step !== 'result' && <button type="button" data-action="confirm-section" className={buttonClass+' flex-[1.5]'} onClick={confirm}>{editing ? 'Použít změny a zpět' : step === status.flow.at(-1) ? 'Zobrazit výsledek' : 'Pokračovat'}</button>}
       </div>
     </div>
   </div>;

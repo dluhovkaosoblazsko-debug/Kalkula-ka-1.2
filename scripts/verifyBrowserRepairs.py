@@ -70,12 +70,12 @@ async def run():
 
         async def confirm(scope, step=None, mobile=False):
             if mobile:
-                await scope.get_by_role('button', name='Potvrdit a pokračovat', exact=True).click()
+                await scope.locator('[data-action="confirm-section"]').click()
                 return
             section = scope.locator(f'[data-step="{step}"]')
             if await section.locator(':scope > details').get_attribute('open') is None:
                 await section.locator(':scope > details > summary').click()
-            await section.get_by_role('button', name=re.compile('^Potvrdit ')).click()
+            await section.locator('[data-action="confirm-section"]').click()
 
         async def finish(scope, mode='jednotlivec', mobile=False, minimum=False):
             steps = (['incomeA', 'incomeB'] if mode == 'manzele' else ['income']) + ['family']
@@ -111,7 +111,7 @@ async def run():
             await finish(scope, mode, mobile)
             text = norm(await scope.locator('[data-testid="case-results"]').inner_text())
             expected = {'jednotlivec': ['10 598', '19 402'], 'manzele': ['8 462', '46 538'], 'nezabavitelna': ['5 299', '24 701']}[mode]
-            assert 'Výsledek podle potvrzeného zadání' in text
+            assert 'Váš orientační výsledek' in text
             assert all(value in text for value in expected), text
             if mobile:
                 await scope.get_by_role('button', name='Sdílet', exact=True).click()
@@ -172,9 +172,9 @@ async def run():
             await scope.get_by_role('button', name=re.compile('^Upravit: Rodinná situace')).click()
             await scope.get_by_role('checkbox', name='Vyživujete děti nebo jiné osoby?').check()
             await scope.get_by_label('Počet vyživovaných osob', exact=True).fill('1')
-            await scope.get_by_role('button', name='Potvrdit a zpět na výsledek', exact=True).click()
+            await scope.get_by_role('button', name='Použít změny a zpět', exact=True).click()
             assert await scope.get_by_role('heading', name='Výsledek a kontrola zadání').count() == 1
-            assert 'Výsledek podle potvrzeného zadání' in await scope.inner_text()
+            assert 'Váš orientační výsledek' in await scope.inner_text()
         await check('F10: direct result edit returns without repeating later sections', edit)
 
         async def invalid():
@@ -210,7 +210,7 @@ async def run():
             await confirm(scope, mobile=True)
             await scope.get_by_role('checkbox', name='Plátce 1 uplatňuje náhradu a podmínky byly ověřeny').check()
             await confirm(scope, mobile=True)
-            assert 'Výsledek podle potvrzeného zadání' in await scope.inner_text()
+            assert 'Váš orientační výsledek' in await scope.inner_text()
             assert 'Náhrada plátci: 50 Kč' in await scope.inner_text()
         await check('F07/F10: fee confirmation does not cause a navigation loop', fee_mobile)
 
