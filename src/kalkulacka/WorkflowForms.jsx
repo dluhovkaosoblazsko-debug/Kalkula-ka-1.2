@@ -79,7 +79,7 @@ export function MobileForm({data,setData,mode,setMode,results,params,onReset,onP
     <h1 className="text-3xl font-black text-slate-900">Co chcete spočítat?</h1>
     <p className="text-sm text-slate-600">Vyberte situaci. Otázky se budou zobrazovat postupně.</p>
     <p role="status" className="rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">{storageMessage}</p>
-    {[["jednotlivec","Oddlužení jednotlivce"],["manzele","Společné oddlužení manželů"],["nezabavitelna","Exekuční srážka"]].map(([key,label])=><button type="button" key={key} className="w-full rounded-2xl border border-slate-200 bg-white p-5 text-left text-lg font-bold text-slate-900" onClick={()=>{if(key!==mode) {setMode(key);} go(key==='manzele'?'incomeA':'income');}}>{label}</button>)}
+    {[["jednotlivec","Oddlužení jednotlivce"],["manzele","Společné oddlužení manželů"],["nezabavitelna","Exekuční srážka"]].map(([key,label])=><button type="button" key={key} className="w-full rounded-2xl border border-slate-200 bg-white p-5 text-left text-lg font-bold text-slate-900" onClick={()=>{if(setMode(key)===false) return; go(key==='manzele'?'incomeA':'income');}}>{label}</button>)}
     <button type="button" className={buttonClass} onClick={()=>{if(onReset()){setEditing(false);go('mode');}}}>Nový výpočet / vymazat údaje</button>
   </div>;
   return <div className="space-y-4 pb-28">

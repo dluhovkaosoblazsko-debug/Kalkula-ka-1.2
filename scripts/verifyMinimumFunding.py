@@ -29,6 +29,7 @@ async def main():
                 context = await browser.new_context(viewport={'width': 390 if mobile else 1440, 'height': 1000}, locale='cs-CZ', service_workers='block')
                 pg = await context.new_page()
                 pg.set_default_timeout(7000)
+                pg.on('dialog', lambda dialog: dialog.accept())
                 runtime_errors = []
                 pg.on('pageerror', lambda error: runtime_errors.append(str(error)))
                 name = f'Funding workflow: {mode}, mobile={mobile}'
