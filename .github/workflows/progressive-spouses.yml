@@ -30,6 +30,7 @@ jobs:
           npm run verify | tee test-results/reference.log
           node scripts/verifyNumericalModel.mjs | tee test-results/numerical.log
           node scripts/verifyAuditRepairs.mjs --render | tee test-results/audit.log
+          node scripts/verifyClearLanguage.mjs --render | tee test-results/clear-language.log
       - name: Production build
         run: npm run build
       - name: Record tested revision
